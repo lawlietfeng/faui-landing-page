@@ -1,6 +1,6 @@
 # faui-landing-page
 
-[faui](https://github.com/lawlietfeng/faui) 表单版（Form Edition）的演示站点，包含 Agent 驱动的表单生成和组件文档。
+faui 表单版（Form Edition）的演示站点，包含 Agent 驱动的表单生成和组件文档。
 
 **在线预览**: https://lawlietfeng.github.io/faui-landing-page/
 
@@ -10,12 +10,12 @@
 |------|------|------|
 | 首页 | `/` | 产品介绍 |
 | 组件文档 | `/docs` | 表单相关组件的配置文档 |
-| Agent 演示 | `/agent-demo` | 通过 [faui-agent](https://github.com/lawlietfeng/faui-agent) 对话式生成表单，实时预览 |
+| Agent 演示 | `/agent-demo` | 通过 faui-agent 对话式生成表单，实时预览 |
 
 ## 技术栈
 
-- [faui](https://github.com/lawlietfeng/faui) — 表单版入口（~47 组件）
-- [faui-agent](https://github.com/lawlietfeng/faui-agent) — AI Agent 表单生成
+- faui — 表单版入口（~47 组件）
+- faui-agent — AI Agent 表单生成
 - React 19 + TypeScript
 - Vite 8 + Ant Design + Tailwind CSS v4
 - React Router v7
@@ -52,8 +52,8 @@ src/
 
 | 项目 | 说明 |
 |------|------|
-| [faui](https://github.com/lawlietfeng/faui) | JSON Schema UI 渲染器（本站使用的 Form Edition） |
-| [faui-agent](https://github.com/lawlietfeng/faui-agent) | AI Agent 框架，Agent 演示页面的核心依赖 |
+| faui | JSON Schema UI 渲染器（本站使用的 Form Edition） |
+| faui-agent | AI Agent 框架，Agent 演示页面的核心依赖 |
 | [full-landing-page](https://github.com/lawlietfeng/full-landing-page) | faui 完整版的组件示例站点 |
 
 ## License
