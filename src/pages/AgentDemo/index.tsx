@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef, useEffect, memo, useCallback, useMemo } from 'react';
-import { Renderer } from 'faui';
-import type { ActivitySnapshot, HttpRequestConfig } from 'faui';
-import { FauiAgent, TOOL_SYSTEM_PROMPT } from 'faui-agent';
-import type { PageSchema } from 'faui-agent';
+import { Renderer } from '@lawlietfeng/faui';
+import type { ActivitySnapshot, HttpRequestConfig } from '@lawlietfeng/faui';
+import { FauiAgent, TOOL_SYSTEM_PROMPT } from '@lawlietfeng/faui-agent';
+import type { PageSchema } from '@lawlietfeng/faui-agent';
 import { Input, Button, Tabs, message, Collapse, Select } from 'antd';
 import { SendOutlined, RobotOutlined, UserOutlined, CopyOutlined, SettingOutlined } from '@ant-design/icons';
 import axios from 'axios';

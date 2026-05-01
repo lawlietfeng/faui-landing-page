@@ -25,8 +25,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "faui": "file:../faui",
-    "faui-agent": "file:../faui-agent",
+    "@lawlietfeng/faui": "^1.0.0",
+    "@lawlietfeng/faui-agent": "^1.0.1",
     "antd": "^6.3.5",
     "axios": "^1.15.0",
     "dayjs": "^1.11.20",
