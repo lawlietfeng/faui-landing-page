@@ -2,6 +2,8 @@
 
 [faui](https://github.com/lawlietfeng/faui) 表单版（Form Edition）的演示站点，包含 Agent 驱动的表单生成和组件文档。
 
+**在线预览**: https://lawlietfeng.github.io/faui-landing-page/
+
 ## 页面结构
 
 | 页面 | 路径 | 说明 |
