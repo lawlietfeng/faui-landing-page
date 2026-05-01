@@ -1,0 +1,1 @@
+var e={};throw Error(`Could not resolve "framer-motion" imported by "@lawlietfeng/faui". Is it installed?`);export{e as default};
