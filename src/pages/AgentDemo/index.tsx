@@ -29,6 +29,167 @@ interface AgentConfig {
   baseUrl: string;
 }
 
+interface ProviderMeta {
+  value: string;
+  label: string;
+  defaultModel: string;
+  defaultBaseUrl?: string;
+  hint?: string;
+}
+
+const DEFAULT_PROVIDER = 'anthropic';
+
+const SUPPORTED_PROVIDERS: ProviderMeta[] = [
+  {
+    value: 'anthropic',
+    label: 'Anthropic',
+    defaultModel: 'claude-sonnet-4-20250514',
+    defaultBaseUrl: 'https://api.anthropic.com',
+  },
+  {
+    value: 'openai',
+    label: 'OpenAI',
+    defaultModel: 'gpt-4.1',
+    defaultBaseUrl: 'https://api.openai.com/v1',
+  },
+  {
+    value: 'openai-compatible',
+    label: 'OpenAI Compatible',
+    defaultModel: 'gpt-4.1-mini',
+    hint: '适用于 Ollama、vLLM、LM Studio 或自建网关，通常需要同时填写 Base URL。',
+  },
+  {
+    value: 'google',
+    label: 'Google',
+    defaultModel: 'gemini-2.0-flash',
+    defaultBaseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+  },
+  {
+    value: 'xai',
+    label: 'xAI',
+    defaultModel: 'grok-2-latest',
+    defaultBaseUrl: 'https://api.x.ai/v1',
+  },
+  {
+    value: 'groq',
+    label: 'Groq',
+    defaultModel: 'llama-3.3-70b-versatile',
+    defaultBaseUrl: 'https://api.groq.com/openai/v1',
+  },
+  {
+    value: 'mistral',
+    label: 'Mistral',
+    defaultModel: 'codestral-latest',
+    defaultBaseUrl: 'https://api.mistral.ai/v1',
+  },
+  {
+    value: 'openrouter',
+    label: 'OpenRouter',
+    defaultModel: 'anthropic/claude-3.5-sonnet',
+    defaultBaseUrl: 'https://openrouter.ai/api/v1',
+  },
+  {
+    value: 'azure-openai-responses',
+    label: 'Azure OpenAI (Responses)',
+    defaultModel: 'gpt-4.1',
+    hint: '通常需要填写 Azure endpoint / deployment，对应的 Model 往往是你自己的 deployment 名称。',
+  },
+  {
+    value: 'amazon-bedrock',
+    label: 'Amazon Bedrock',
+    defaultModel: 'anthropic.claude-3-5-haiku-20241022-v1:0',
+    defaultBaseUrl: 'https://bedrock-runtime.us-east-1.amazonaws.com',
+    hint: '通常依赖 AWS 环境凭证或角色，不一定使用普通 API Key。',
+  },
+  {
+    value: 'google-vertex',
+    label: 'Google Vertex',
+    defaultModel: 'gemini-2.0-flash',
+    defaultBaseUrl: 'https://{location}-aiplatform.googleapis.com',
+    hint: '通常依赖 Google ADC / Vertex 凭证，Base URL 里的 {location} 需要替换成你的区域。',
+  },
+  {
+    value: 'google-gemini-cli',
+    label: 'Google Gemini CLI',
+    defaultModel: 'gemini-2.5-flash',
+    defaultBaseUrl: 'https://cloudcode-pa.googleapis.com',
+    hint: '通常依赖 OAuth 登录，不是普通 API Key。',
+  },
+  {
+    value: 'google-antigravity',
+    label: 'Google Antigravity',
+    defaultModel: 'gemini-3-flash',
+    defaultBaseUrl: 'https://daily-cloudcode-pa.sandbox.googleapis.com',
+    hint: '通常依赖 OAuth 登录，不是普通 API Key。',
+  },
+  {
+    value: 'openai-codex',
+    label: 'OpenAI Codex',
+    defaultModel: 'gpt-5.2-codex',
+    defaultBaseUrl: 'https://chatgpt.com/backend-api',
+    hint: '通常依赖 OpenAI / ChatGPT OAuth 会话，而不是标准 API Key。',
+  },
+  {
+    value: 'github-copilot',
+    label: 'GitHub Copilot',
+    defaultModel: 'claude-sonnet-4',
+    defaultBaseUrl: 'https://api.individual.githubcopilot.com',
+    hint: '通常依赖 GitHub Copilot OAuth，会话型认证多于 API Key。',
+  },
+  {
+    value: 'cerebras',
+    label: 'Cerebras',
+    defaultModel: 'gpt-oss-120b',
+    defaultBaseUrl: 'https://api.cerebras.ai/v1',
+  },
+  {
+    value: 'huggingface',
+    label: 'Hugging Face',
+    defaultModel: 'Qwen/Qwen3-Coder-480B-A35B-Instruct',
+    defaultBaseUrl: 'https://router.huggingface.co/v1',
+  },
+  {
+    value: 'kimi-coding',
+    label: 'Kimi Coding',
+    defaultModel: 'k2p5',
+    defaultBaseUrl: 'https://api.kimi.com/coding',
+  },
+  {
+    value: 'minimax',
+    label: 'MiniMax',
+    defaultModel: 'MiniMax-M2',
+    defaultBaseUrl: 'https://api.minimax.io/anthropic',
+  },
+  {
+    value: 'minimax-cn',
+    label: 'MiniMax CN',
+    defaultModel: 'MiniMax-M2',
+    defaultBaseUrl: 'https://api.minimaxi.com/anthropic',
+  },
+  {
+    value: 'opencode',
+    label: 'OpenCode',
+    defaultModel: 'claude-sonnet-4-5',
+    defaultBaseUrl: 'https://opencode.ai/zen/v1',
+  },
+  {
+    value: 'vercel-ai-gateway',
+    label: 'Vercel AI Gateway',
+    defaultModel: 'alibaba/qwen-3-14b',
+    defaultBaseUrl: 'https://ai-gateway.vercel.sh',
+  },
+  {
+    value: 'zai',
+    label: 'ZAI',
+    defaultModel: 'glm-4.5',
+    defaultBaseUrl: 'https://api.z.ai/api/coding/paas/v4',
+  },
+];
+
+const PROVIDER_META_MAP = Object.fromEntries(
+  SUPPORTED_PROVIDERS.map((item) => [item.value, item]),
+) as Record<string, ProviderMeta>;
+
 const httpRequest = async (config: HttpRequestConfig) => {
   const response = await axios({
     method: config.method,
@@ -103,8 +264,8 @@ export default function AgentDemo() {
     }
     return {
       apiKey: '',
-      provider: 'anthropic',
-      model: 'claude-sonnet-4-20250514',
+      provider: DEFAULT_PROVIDER,
+      model: PROVIDER_META_MAP[DEFAULT_PROVIDER].defaultModel,
       baseUrl: '',
     };
   });
@@ -124,6 +285,33 @@ export default function AgentDemo() {
       localStorage.removeItem('faui-agent-current-conversation');
     }
   }, [currentConversationId]);
+
+  const currentProviderMeta = PROVIDER_META_MAP[config.provider];
+  const providerOptions = currentProviderMeta
+    ? SUPPORTED_PROVIDERS
+    : [{ value: config.provider, label: `${config.provider} (Current)` }, ...SUPPORTED_PROVIDERS];
+  const apiKeyPlaceholder = currentProviderMeta?.hint?.includes('OAuth')
+    ? '该 Provider 往往依赖 OAuth / 环境凭证'
+    : config.provider === 'openai-compatible'
+      ? '可留空或填写你的网关/API Key'
+      : 'sk-...';
+
+  const handleProviderChange = useCallback((nextProvider: string) => {
+    setConfig((prev) => {
+      const nextMeta = PROVIDER_META_MAP[nextProvider];
+      const prevMeta = PROVIDER_META_MAP[prev.provider];
+      const shouldClearBaseUrl = !prev.baseUrl
+        || prev.provider === 'openai-compatible'
+        || prev.baseUrl === prevMeta?.defaultBaseUrl;
+
+      return {
+        ...prev,
+        provider: nextProvider,
+        model: nextMeta?.defaultModel || prev.model,
+        baseUrl: shouldClearBaseUrl ? '' : prev.baseUrl,
+      };
+    });
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -356,7 +544,7 @@ export default function AgentDemo() {
                 size="small"
                 value={config.apiKey}
                 onChange={(e) => setConfig(prev => ({ ...prev, apiKey: e.target.value }))}
-                placeholder="sk-..."
+                placeholder={apiKeyPlaceholder}
               />
             </div>
             <div>
@@ -364,14 +552,17 @@ export default function AgentDemo() {
               <Select
                 size="small"
                 className="w-full"
+                showSearch
+                optionFilterProp="label"
                 value={config.provider}
-                onChange={(v) => setConfig(prev => ({ ...prev, provider: v }))}
-                options={[
-                  { value: 'anthropic', label: 'Anthropic' },
-                  { value: 'openai', label: 'OpenAI' },
-                  { value: 'openai-compatible', label: 'OpenAI Compatible' },
-                ]}
+                onChange={handleProviderChange}
+                options={providerOptions.map(({ value, label }) => ({ value, label }))}
               />
+              {currentProviderMeta?.hint && (
+                <div className="mt-1 text-[11px] leading-5 text-amber-600 dark:text-amber-400">
+                  {currentProviderMeta.hint}
+                </div>
+              )}
             </div>
             <div>
               <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Model</label>
@@ -379,7 +570,7 @@ export default function AgentDemo() {
                 size="small"
                 value={config.model}
                 onChange={(e) => setConfig(prev => ({ ...prev, model: e.target.value }))}
-                placeholder="claude-sonnet-4-20250514"
+                placeholder={currentProviderMeta?.defaultModel || '请输入模型 ID'}
               />
             </div>
             <div>
@@ -388,7 +579,7 @@ export default function AgentDemo() {
                 size="small"
                 value={config.baseUrl}
                 onChange={(e) => setConfig(prev => ({ ...prev, baseUrl: e.target.value }))}
-                placeholder="https://api.example.com"
+                placeholder={currentProviderMeta?.defaultBaseUrl || 'https://api.example.com'}
               />
             </div>
           </div>
