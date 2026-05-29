@@ -3,6 +3,9 @@
   "description": "Form-edition demo site for faui with AI Agent builder and component docs",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "license": "Apache-2.0",
   "author": "lawliet",
   "repository": {
