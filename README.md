@@ -23,15 +23,16 @@ faui 表单版（Form Edition）的演示站点，包含 Agent 驱动的表单�
 ## 本地运行
 
 ```bash
-# 前置：先构建 faui 和 faui-agent
-cd ../faui && npm install && npm run build
-cd ../faui-agent && npm install && npm run build
-
-# 安装依赖并启动
-cd ../faui-landing-page
+# faui / faui-agent 通过 npm 包消费，无需本地构建
 npm install
 npm run dev
 ```
+
+## 部署
+
+部署到 GitHub Pages：https://lawlietfeng.github.io/faui-landing-page/
+
+push 到 `master` 后由 GitHub Actions 自动构建并发布（见 `.github/workflows/deploy.yml`）。
 
 ## 项目结构
 
