@@ -17,9 +17,6 @@ dist-ssr
 .env.local
 .env.*.local
 
-# Lock files
-package-lock.json
-
 # IDE / AI tools
 .vscode/*
 !.vscode/extensions.json
