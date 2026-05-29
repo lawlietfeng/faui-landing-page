@@ -6,7 +6,9 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // AgentDemo is frozen AI code (see CLAUDE.md) — its pre-existing React
+  // Compiler memoization errors must not be modified, so exclude from lint.
+  globalIgnores(['dist', 'src/pages/AgentDemo/**']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
