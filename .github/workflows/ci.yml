@@ -18,11 +18,10 @@ jobs:
       - run: npm run build
 
   # 文档同步检查:把 lawlietfeng/faui 拉到 ../faui,跑 sync-docs --check。
-  # 当前 T8 还没逐组件 review 完,期间允许失败(continue-on-error),只用作可见性。
-  # T8 收尾后把 continue-on-error 去掉,让它真正阻塞 PR。
+  # 上游 faui/docs 改了 / landing 缺同步时阻塞 PR。
+  # 故意 site-specific 的文档已在 sync-docs.mjs 的 IGNORE_DRIFT / IGNORE_MISSING 列表里。
   docs-sync:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
         with:

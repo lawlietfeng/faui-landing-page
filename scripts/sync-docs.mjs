@@ -26,6 +26,17 @@ const IGNORE_MISSING = [
   /^faui-llm-prompt\.md$/,
 ];
 
+// 这些 landing 文档是 site-specific 改写过的:加了 Full-only banner、Form vs Full 框架、
+// 弱智吧式注释等。允许它们和上游不同,内容漂移不阻塞 CI。
+const IGNORE_DRIFT = [
+  /^npm-usage\.md$/,
+  /^form-guide\.md$/,
+  /^lifecycle-types\.md$/,
+  /^components\/chart\.md$/,
+  /^components\/condition\.md$/,
+  /^components\/repeater\.md$/,
+];
+
 const args = new Set(process.argv.slice(2));
 const CHECK = args.has('--check');
 const JSON_MODE = args.has('--json');
@@ -58,24 +69,31 @@ function isIgnoredMissing(path) {
   return IGNORE_MISSING.some((re) => re.test(path));
 }
 
+function isIgnoredDrift(path) {
+  return IGNORE_DRIFT.some((re) => re.test(path));
+}
+
 const upstream = walk(UPSTREAM_DOCS);
 const landing = walk(LANDING_DOCS);
 
 const missing = [];        // upstream 有, landing 无, 且不在 ignore 列表
 const ignoredMissing = []; // 故意不在 landing 里的(actions/*, dev docs)
 const extra = [];          // landing 有, upstream 无
-const drift = [];          // 都有但内容不同
+const drift = [];          // 都有但内容不同, 且不在 ignore 列表
+const ignoredDrift = [];   // 故意改写过的 site-specific 文档
 
 for (const [path, content] of upstream) {
   if (!landing.has(path)) {
     if (isIgnoredMissing(path)) ignoredMissing.push(path);
     else missing.push(path);
   } else if (hash(content) !== hash(landing.get(path))) {
-    drift.push({
+    const entry = {
       path,
       upstreamBytes: content.length,
       landingBytes: landing.get(path).length,
-    });
+    };
+    if (isIgnoredDrift(path)) ignoredDrift.push(entry);
+    else drift.push(entry);
   }
 }
 for (const path of landing.keys()) {
@@ -91,6 +109,7 @@ const report = {
   ignoredMissing: ignoredMissing.sort(),
   extra: extra.sort(),
   drift: drift.sort((a, b) => a.path.localeCompare(b.path)),
+  ignoredDrift: ignoredDrift.sort((a, b) => a.path.localeCompare(b.path)),
 };
 
 if (JSON_MODE) {
@@ -126,12 +145,21 @@ if (JSON_MODE) {
     }
     console.log('');
   }
+  if (ignoredDrift.length) {
+    console.log(`Ignored drift (site-specific authoring, ${ignoredDrift.length}):`);
+    for (const d of ignoredDrift) {
+      const diff = d.landingBytes - d.upstreamBytes;
+      const sign = diff > 0 ? '+' : '';
+      console.log(`  · ${d.path}  (landing ${sign}${diff}B vs upstream)`);
+    }
+    console.log('');
+  }
   if (!missing.length && !extra.length && !drift.length) {
     console.log('All docs in sync.');
   }
 }
 
 if (CHECK && (missing.length || drift.length)) {
-  // 注意:extra / ignoredMissing 不阻塞 CI
+  // 注意:extra / ignoredMissing / ignoredDrift 不阻塞 CI
   process.exit(1);
 }
