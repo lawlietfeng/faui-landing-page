@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useMemo, useState } from 'react';
+import type { HTMLAttributes } from 'react';
 import { Menu, Input, Button, Alert } from 'antd';
+import type { MenuProps } from 'antd';
 import { useNavigate, useLocation, Routes, Route, Navigate } from 'react-router-dom';
 import { CopyOutlined, CheckOutlined, SearchOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
@@ -78,7 +78,7 @@ const buildMenuItems = (
 ) => {
   const query = searchQuery.toLowerCase().trim();
 
-  const categoryChildren = componentCategories.map((cat) => {
+  const categoryChildren = componentCategories.flatMap((cat) => {
     const items = cat.children
       .filter((name) => componentDocs.has(name))
       .filter((name) => !query || name.includes(query))
@@ -91,23 +91,23 @@ const buildMenuItems = (
         };
       });
 
-    if (items.length === 0) return null;
+    if (items.length === 0) return [];
 
-    return {
+    return [{
       key: cat.key,
       label: cat.label,
       children: items,
-    };
-  }).filter(Boolean);
+    }];
+  });
 
-  const menuItems: any[] = [];
+  const menuItems: NonNullable<MenuProps['items']> = [];
 
   if (!query) {
     menuItems.push({
       key: 'guides',
       label: '使用指南',
-      type: 'group' as const,
-      children: guideItems,
+      type: 'group',
+      children: guideItems.map((g) => ({ key: g.key, label: g.label })),
     });
   }
 
@@ -116,7 +116,22 @@ const buildMenuItems = (
   return menuItems;
 };
 
-const CodeBlock = ({ inline, className, children, ...props }: any) => {
+// ghcolors 在 @types/react-syntax-highlighter 下被推断成
+// `CSSProperties | { [key: string]: CSSProperties }` 联合。运行时它就是 prism 主题字典,
+// 但 TS 在严格模式下不肯把联合窄化进 SyntaxHighlighter.style 期望的字典形态,
+// 只能 `as any` 跳过。问题在上游 @types,不在我们代码。
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ghcolorsStyle = ghcolors as any;
+
+interface CodeBlockProps extends HTMLAttributes<HTMLElement> {
+  inline?: boolean;
+  node?: unknown;
+}
+
+const CodeBlock = (props: CodeBlockProps) => {
+  // 把 react-markdown 注入的 node 字段从 rest 中剔除,避免泄漏到 DOM
+  const { inline, className, children, node, ...rest } = props;
+  void node;
   const [copied, setCopied] = useState(false);
   const match = /language-(\w+)/.exec(className || '');
   const codeContent = String(children).replace(/\n$/, '');
@@ -149,7 +164,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
           className="!absolute !top-3 !right-3 z-10 bg-white dark:bg-[#2d2d2d] border border-gray-200 dark:border-gray-600 shadow-sm"
         />
         <SyntaxHighlighter
-          style={ghcolors as any}
+          style={ghcolorsStyle}
           language={match[1]}
           PreTag="div"
           customStyle={{
@@ -162,7 +177,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
             border: '1px solid var(--tw-prose-pre-border, #d0d7de)',
           }}
           className="dark:!bg-[#1e1e1e] dark:!border-gray-700"
-          {...props}
+          {...rest}
         >
           {formattedContent}
         </SyntaxHighlighter>
@@ -171,7 +186,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
   }
 
   return (
-    <code className="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-sm text-pink-600 dark:text-pink-400" {...props}>
+    <code className="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-sm text-pink-600 dark:text-pink-400" {...rest}>
       {children}
     </code>
   );
@@ -194,17 +209,17 @@ const DocViewer = ({ content, componentSlug }: { content: string; componentSlug?
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          h1: ({ node, ...props }) => <h1 className="text-[32px] font-extrabold mb-6 text-gray-900 dark:text-white" {...props} />,
-          h2: ({ node, ...props }) => <h2 className="text-[24px] font-bold mt-10 mb-4 pb-2 border-b border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white" {...props} />,
-          h3: ({ node, ...props }) => <h3 className="text-[20px] font-semibold mt-8 mb-4 text-gray-900 dark:text-white" {...props} />,
-          p: ({ node, ...props }) => <p className="mb-4 text-gray-700 dark:text-gray-300" {...props} />,
-          ul: ({ node, ...props }) => <ul className="mb-4 pl-6 list-disc text-gray-700 dark:text-gray-300" {...props} />,
-          ol: ({ node, ...props }) => <ol className="mb-4 pl-6 list-decimal text-gray-700 dark:text-gray-300" {...props} />,
-          li: ({ node, ...props }) => <li className="mb-2" {...props} />,
-          a: ({ node, ...props }) => <a className="text-[#1677ff] hover:underline" {...props} />,
-          table: ({ node, ...props }) => <table className="w-full mb-6 border-collapse" {...props} />,
-          th: ({ node, ...props }) => <th className="p-3 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-left font-semibold text-gray-900 dark:text-gray-200" {...props} />,
-          td: ({ node, ...props }) => <td className="p-3 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300" {...props} />,
+          h1: (props) => <h1 className="text-[32px] font-extrabold mb-6 text-gray-900 dark:text-white" {...props} />,
+          h2: (props) => <h2 className="text-[24px] font-bold mt-10 mb-4 pb-2 border-b border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white" {...props} />,
+          h3: (props) => <h3 className="text-[20px] font-semibold mt-8 mb-4 text-gray-900 dark:text-white" {...props} />,
+          p: (props) => <p className="mb-4 text-gray-700 dark:text-gray-300" {...props} />,
+          ul: (props) => <ul className="mb-4 pl-6 list-disc text-gray-700 dark:text-gray-300" {...props} />,
+          ol: (props) => <ol className="mb-4 pl-6 list-decimal text-gray-700 dark:text-gray-300" {...props} />,
+          li: (props) => <li className="mb-2" {...props} />,
+          a: (props) => <a className="text-[#1677ff] hover:underline" {...props} />,
+          table: (props) => <table className="w-full mb-6 border-collapse" {...props} />,
+          th: (props) => <th className="p-3 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-left font-semibold text-gray-900 dark:text-gray-200" {...props} />,
+          td: (props) => <td className="p-3 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300" {...props} />,
           code: CodeBlock,
         }}
       >
