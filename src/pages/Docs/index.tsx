@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useMemo, useState } from 'react';
-import { Menu, Input, Button } from 'antd';
+import { Menu, Input, Button, Alert } from 'antd';
 import { useNavigate, useLocation, Routes, Route, Navigate } from 'react-router-dom';
 import { CopyOutlined, CheckOutlined, SearchOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { ghcolors } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { componentCategories } from './componentCategories';
+import { componentCategories, FULL_ONLY_COMPONENTS } from './componentCategories';
 
 const markdownModules = import.meta.glob('../../../docs/**/*.md', { query: '?raw', import: 'default', eager: true });
 
@@ -82,10 +82,14 @@ const buildMenuItems = (
     const items = cat.children
       .filter((name) => componentDocs.has(name))
       .filter((name) => !query || name.includes(query))
-      .map((name) => ({
-        key: componentDocs.get(name)!,
-        label: name.charAt(0).toUpperCase() + name.slice(1),
-      }));
+      .map((name) => {
+        const isFullOnly = FULL_ONLY_COMPONENTS.has(name);
+        const baseLabel = name.charAt(0).toUpperCase() + name.slice(1);
+        return {
+          key: componentDocs.get(name)!,
+          label: isFullOnly ? `${baseLabel} (Full 版)` : baseLabel,
+        };
+      });
 
     if (items.length === 0) return null;
 
@@ -173,9 +177,20 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
   );
 };
 
-const DocViewer = ({ content }: { content: string }) => {
+const DocViewer = ({ content, componentSlug }: { content: string; componentSlug?: string }) => {
+  const isFullOnly = !!componentSlug && FULL_ONLY_COMPONENTS.has(componentSlug);
+
   return (
     <div className="max-w-[860px] mx-auto py-10 px-6 text-gray-900 dark:text-gray-100 text-base leading-relaxed">
+      {isFullOnly && (
+        <Alert
+          type="warning"
+          showIcon
+          className="mb-6"
+          message="本组件仅 Full 版可用"
+          description="本站使用 Form 版 Renderer,只能展示文档。需要实际渲染请改用 @lawlietfeng/faui/full,或在 customComponents 中自行注入。"
+        />
+      )}
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
@@ -278,13 +293,17 @@ export default function Docs() {
       <main className="flex-1 overflow-y-auto bg-white dark:bg-[#121212]">
         <div className="min-h-[280px]">
           <Routes>
-            {routes.map((route) => (
-              <Route
-                key={route.path}
-                path={route.path}
-                element={<DocViewer content={route.content} />}
-              />
-            ))}
+            {routes.map((route) => {
+              const segments = route.path.split('/').filter(Boolean);
+              const componentSlug = segments[0] === 'components' ? segments[1] : undefined;
+              return (
+                <Route
+                  key={route.path}
+                  path={route.path}
+                  element={<DocViewer content={route.content} componentSlug={componentSlug} />}
+                />
+              );
+            })}
             <Route path="/" element={<Navigate to={`/docs${defaultPath}`} replace />} />
             <Route path="*" element={<DocNotFound fallbackPath={defaultPath} />} />
           </Routes>
