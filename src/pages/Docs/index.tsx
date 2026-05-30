@@ -174,6 +174,37 @@ const DocViewer = ({ content }: { content: string }) => {
   );
 };
 
+const DocNotFound = ({ fallbackPath }: { fallbackPath: string }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const requested = location.pathname.replace('/docs', '') || '/';
+
+  return (
+    <div className="max-w-[860px] mx-auto py-20 px-6 text-center">
+      <div className="text-[80px] leading-none font-extrabold text-gray-200 dark:text-gray-700 select-none">
+        404
+      </div>
+      <h1 className="text-[24px] font-bold mt-4 mb-3 text-gray-900 dark:text-white">
+        文档不存在
+      </h1>
+      <p className="text-gray-600 dark:text-gray-400 mb-2">
+        没有找到 <code className="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-pink-600 dark:text-pink-400">/docs{requested}</code> 这份文档。
+      </p>
+      <p className="text-gray-400 dark:text-gray-500 text-sm mb-8">
+        没找到的文档就是没写,写了的文档就能找到,所以找不到的多半就是没写的。
+      </p>
+      <Button
+        type="primary"
+        shape="round"
+        onClick={() => navigate(`/docs${fallbackPath}`)}
+        style={{ backgroundColor: '#0066cc', borderColor: '#0066cc' }}
+      >
+        返回文档首页
+      </Button>
+    </div>
+  );
+};
+
 export default function Docs() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -227,6 +258,7 @@ export default function Docs() {
               />
             ))}
             <Route path="/" element={<Navigate to={`/docs${defaultPath}`} replace />} />
+            <Route path="*" element={<DocNotFound fallbackPath={defaultPath} />} />
           </Routes>
         </div>
       </main>
