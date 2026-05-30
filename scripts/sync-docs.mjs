@@ -16,6 +16,16 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const LANDING_DOCS = join(__dirname, '..', 'docs');
 const UPSTREAM_DOCS = join(__dirname, '..', '..', 'faui', 'docs');
 
+// 上游 faui/docs 里这些文档不该出现在 landing(actions 服务端语义、dev/llm 内部用),
+// 缺失它们不算 missing,不阻塞 CI。
+const IGNORE_MISSING = [
+  /^actions\//,
+  /^animation\.md$/,
+  /^component-doc-standard\.md$/,
+  /^development\.md$/,
+  /^faui-llm-prompt\.md$/,
+];
+
 const args = new Set(process.argv.slice(2));
 const CHECK = args.has('--check');
 const JSON_MODE = args.has('--json');
@@ -44,16 +54,22 @@ function hash(s) {
   return h.toString(36);
 }
 
+function isIgnoredMissing(path) {
+  return IGNORE_MISSING.some((re) => re.test(path));
+}
+
 const upstream = walk(UPSTREAM_DOCS);
 const landing = walk(LANDING_DOCS);
 
-const missing = []; // upstream 有, landing 无
-const extra = [];   // landing 有, upstream 无
-const drift = [];   // 都有但内容不同
+const missing = [];        // upstream 有, landing 无, 且不在 ignore 列表
+const ignoredMissing = []; // 故意不在 landing 里的(actions/*, dev docs)
+const extra = [];          // landing 有, upstream 无
+const drift = [];          // 都有但内容不同
 
 for (const [path, content] of upstream) {
   if (!landing.has(path)) {
-    missing.push(path);
+    if (isIgnoredMissing(path)) ignoredMissing.push(path);
+    else missing.push(path);
   } else if (hash(content) !== hash(landing.get(path))) {
     drift.push({
       path,
@@ -72,6 +88,7 @@ const report = {
   upstreamCount: upstream.size,
   landingCount: landing.size,
   missing: missing.sort(),
+  ignoredMissing: ignoredMissing.sort(),
   extra: extra.sort(),
   drift: drift.sort((a, b) => a.path.localeCompare(b.path)),
 };
@@ -88,6 +105,11 @@ if (JSON_MODE) {
   if (missing.length) {
     console.log(`Missing in landing (${missing.length}):`);
     for (const p of missing) console.log(`  - ${p}`);
+    console.log('');
+  }
+  if (ignoredMissing.length) {
+    console.log(`Ignored missing (intentional, ${ignoredMissing.length}):`);
+    for (const p of ignoredMissing) console.log(`  · ${p}`);
     console.log('');
   }
   if (extra.length) {
@@ -110,6 +132,6 @@ if (JSON_MODE) {
 }
 
 if (CHECK && (missing.length || drift.length)) {
-  // 注意:extra 不阻塞 CI——landing 可以有自己额外的页面(如 form-guide 拆分版)
+  // 注意:extra / ignoredMissing 不阻塞 CI
   process.exit(1);
 }
