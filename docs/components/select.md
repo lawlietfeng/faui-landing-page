@@ -56,16 +56,35 @@
 
 ### on_change（值变化事件）
 
-**必须配置**：
+当用户选择新值时触发。组件会自动将新值注入到 action 上下文中的 `$value` 变量，可在表达式中通过 `${$value}` 引用。
+
+**基础用法** — 不设 `value` 字段时，组件自动将选中值作为 action 的 value：
 
 ```json
 {
   "id": "type-select",
   "component": "select",
   "value": { "path": "/requestType" },
-  "on_change": { "action": "update_data", "path": "/requestType", "value": "${value}" }
+  "on_change": { "action": "update_data", "path": "/requestType" }
 }
 ```
+
+**自定义 value 表达式** — 设置 `value` 字段时，组件保留你的表达式，不会覆盖：
+
+```json
+{
+  "id": "type-select",
+  "component": "select",
+  "value": { "path": "/requestType" },
+  "on_change": {
+    "action": "update_data",
+    "path": "/form/selectedType",
+    "value": "prefix_${$value}"
+  }
+}
+```
+
+> `$value` 始终等于组件的原始新值，无论 on_change 中是否设置了自定义 `value`。
 
 ### rules（校验规则）
 

@@ -1,98 +1,126 @@
 # button 组件
 
-`button` 组件用于创建可点击的按钮，触发业务动作，如提交表单、保存数据、跳转页面等。
+button 组件用于响应用户的点击操作，触发业务逻辑（如提交表单、请求接口、跳转页面等）。
 
 ## 适用场景
 
-- 提交表单数据
-- 保存用户输入
-- 触发业务 action（如调用接口、跳转链接）
-- 多步骤流程中的"下一步"、"上一步"
+- **表单提交**：在表单的末尾用于触发校验和数据提交。
+- **独立操作**：如新建、删除、导出等独立于表单的业务操作。
+- **页面跳转**：作为导航入口，点击后跳转至其他页面。
 
 ## 核心属性
 
-### label（按钮文字）
+### 属性总览
 
-最简单的按钮文字设置方式：
+| 属性名     | 类型                         | 默认值      | 说明                                             |
+| ---------- | ---------------------------- | ----------- | ------------------------------------------------ |
+| `label`    | `string` (支持表达式)        | -           | 按钮文本（推荐）。                               |
+| `content`  | `string` (支持表达式)        | -           | 同 `label`，按钮文本的另一种写法。               |
+| `type`     | `'primary' \| 'dashed' \| 'link' \| 'text' \| 'default'` | `'default'` | 按钮的视觉类型。                                 |
+| `danger`   | `boolean`                    | `false`     | 是否为危险按钮（通常为红色）。                   |
+| `ghost`    | `boolean`                    | `false`     | 幽灵属性，使按钮背景透明。                       |
+| `shape`    | `'default' \| 'circle' \| 'round'` | `'default'` | 按钮的形状。                                     |
+| `size`     | `'large' \| 'middle' \| 'small'` | `'middle'`  | 按钮的尺寸。                                     |
+| `block`    | `boolean`                    | `false`     | 将按钮宽度调整为其父宽度的 100%。                |
+| `disabled` | `boolean` (支持表达式)       | `false`     | 是否禁用按钮。                                   |
+| `on_tap`   | `Action[]`                   | -           | 点击按钮时触发的动作数组。                       |
+| `children` | `string[]`                   | -           | 嵌套子组件（仅在未设置 `label/content` 时生效）。|
+
+---
+
+### label / content（按钮文本）
+
+用于配置按钮显示的文字内容，支持通过 `useExpression` 进行表达式求值，实现动态文本。
 
 ```json
 {
-  "id": "submit-btn",
+  "id": "submit_btn",
   "component": "button",
   "label": "提交"
 }
 ```
+*提示：也可以使用插值表达式如 `"label": "提交 ${data.formName}"`。*
 
-### children（子组件方式）
+### type（按钮类型）
 
-如果需要在按钮中放置更复杂的内容（如图标 + 文字组合），可以使用 `children` 引用 `text` 组件：
+控制按钮的视觉表现级别，用于区分操作的主次。
 
-```json
-[
-  {
-    "id": "submit-btn",
-    "component": "button",
-    "children": ["submit-icon", "submit-text"]
-  },
-  {
-    "id": "submit-icon",
-    "component": "text",
-    "content": "🚀"
-  },
-  {
-    "id": "submit-text",
-    "component": "text",
-    "content": "提交"
-  }
-]
-```
-
-**注意**：`label` 和 `children` 二选一使用。如果同时设置，`label` 优先生效。
-
-### on_tap（点击动作）
-
-`on_tap` 是按钮最核心的属性，定义点击按钮后执行的动作。它是一个**动作数组**，按顺序依次执行。
-
-#### 1. update_data（更新数据）
-
-最常用的动作，将用户输入保存到数据模型：
+| 值        | 效果       | 典型用途               |
+| --------- | ---------- | ---------------------- |
+| `primary` | 实心主色   | 页面中的主要操作（如：保存、提交） |
+| `default` | 描边默认色 | 次要操作（如：取消、重置） |
+| `dashed`  | 虚线描边   | 添加类操作（如：添加一行） |
+| `text`    | 纯文本     | 弱化操作或表格内的操作列 |
+| `link`    | 链接样式   | 导航或外部跳转         |
 
 ```json
 {
-  "id": "save-btn",
+  "id": "primary_btn",
   "component": "button",
-  "label": "保存",
-  "on_tap": [
-    {
-      "action": "update_data",
-      "path": "/draft",
-      "value": "${$root}"
-    }
-  ]
+  "type": "primary",
+  "label": "确认保存"
 }
 ```
 
-#### 2. http_proxy（HTTP 请求）
+### danger（危险操作）
 
-调用外部接口：
+当配置为 `true` 时，按钮会呈现警告色（通常为红色），用于高危操作。
 
 ```json
 {
-  "id": "submit-btn",
+  "id": "delete_btn",
   "component": "button",
-  "label": "提交",
+  "type": "primary",
+  "danger": true,
+  "label": "删除记录"
+}
+```
+
+### block（块级按钮）
+
+当配置为 `true` 时，按钮的宽度会撑满其父容器（`100%`），常用于移动端或者侧边栏的底部操作。
+
+```json
+{
+  "id": "login_btn",
+  "component": "button",
+  "type": "primary",
+  "block": true,
+  "label": "登录"
+}
+```
+
+### disabled（禁用状态）
+
+用于禁用按钮，防止用户点击。支持配置为布尔值或使用表达式根据业务状态动态判断。
+
+```json
+{
+  "id": "submit_btn",
+  "component": "button",
+  "type": "primary",
+  "disabled": "${!data.isAgreed}",
+  "label": "提交"
+}
+```
+
+### on_tap（点击事件）
+
+这是一个极其重要的属性，当按钮被点击时，会依次执行 `on_tap` 数组中配置的动作（Action）。如果按钮位于表单 (`Form`) 内且是该表单的提交按钮，会在执行 `on_tap` 前自动触发并等待表单的校验规则。
+
+```json
+{
+  "id": "save_btn",
+  "component": "button",
+  "label": "保存",
+  "type": "primary",
   "on_tap": [
     {
       "action": "http_proxy",
       "payload": {
         "http_config": {
           "method": "POST",
-          "path": "/api/form/submit",
-          "headers": { "Content-Type": "application/json" }
-        },
-        "http_body": {
-          "name": { "path": "/name" },
-          "email": { "path": "/email" }
+          "path": "/api/saveData"
         }
       }
     }
@@ -100,152 +128,62 @@
 }
 ```
 
-`http_body` 中的 `{ "path": "/xxx" }` 会被替换为 `dataModel` 中对应字段的值。
+## 特有机制 / 高级用法
 
-#### 3. 动作链（多个动作顺序执行）
+### 1. 表单提交自动校验
+当 `button` 处于 `form` 组件内部，且被关联为提交按钮时，点击该按钮会优先执行 `form` 的 `validateAll()` 方法。如果校验未通过，后续的 `on_tap` 动作将被拦截执行。
 
-`on_tap` 是一个数组，可以链式执行多个动作：
+### 2. 嵌套子组件
+在绝大多数情况下，使用 `label` 或 `content` 已经足够满足文本展示需求。但如果按钮内部需要极其复杂的结构（例如图标加文字的混合布局），且 **未配置** `label` 和 `content`，则可以通过 `children` 数组嵌套其他组件。
 
 ```json
 {
-  "id": "complex-btn",
+  "id": "icon_btn",
   "component": "button",
-  "label": "提交流程",
-  "on_tap": [
-    { "action": "update_data", "path": "/status", "value": "submitting" },
-    { "action": "http_proxy", "payload": { "http_config": { "method": "POST", "path": "/api/submit" } } },
-    { "action": "update_data", "path": "/status", "value": "submitted" }
-  ]
+  "children": ["custom_icon", "custom_text"]
 }
 ```
-
-上面按顺序执行：先更新状态为"提交中"，再调用接口，最后更新状态为"已提交"。
-
-## 与 form 组件的配合
-
-在 `form` 表单中使用按钮时，需要注意以下两点：
-
-### 1. submitButtonId 关联
-
-在 `form` 组件中，通过 `submitButtonId` 指定提交按钮的 `id`：
-
-```json
-{
-  "id": "user-form",
-  "component": "form",
-  "submitButtonId": "btn-submit",
-  "children": ["name-input", "btn-submit"]
-}
-```
-
-```json
-{
-  "id": "btn-submit",
-  "component": "button",
-  "label": "提交"
-}
-```
-
-**关键点**：`form` 的 `submitButtonId` 值必须与按钮的 `id` 完全一致。
-
-### 2. 校验机制
-
-当用户点击 `id` 等于 `submitButtonId` 的按钮时，`form` 会自动：
-
-1. 对表单内所有字段执行全量校验
-2. 如果任意字段校验失败，**阻断**后续 action 执行
-3. 只有全部字段校验通过，才继续执行按钮的 `on_tap`
-
-这意味着，即使按钮配置了 `http_proxy` 提交，如果必填字段为空，点击按钮也不会发送请求。
-
-### 按钮放在 form 外的情况
-
-如果按钮在 `form` 外面，但需要触发 form 校验，可以在按钮上监听 form 校验结果后再执行后续动作。推荐的做法是将按钮放在 `form` 的 `children` 中。
 
 ## 完整示例
 
-### 基础提交按钮
+一个带有动态文本、红色警告样式、尺寸较大且绑定了请求动作的删除按钮：
 
 ```json
 {
-  "id": "submit-btn",
+  "id": "confirm_delete_btn",
   "component": "button",
-  "label": "提交",
+  "type": "primary",
+  "danger": true,
+  "size": "large",
+  "label": "确认删除 ${data.itemName}",
   "on_tap": [
     {
       "action": "http_proxy",
       "payload": {
         "http_config": {
           "method": "POST",
-          "path": "/api/submit",
-          "headers": { "Content-Type": "application/json" }
-        },
-        "http_body": {
-          "name": { "path": "/name" }
+          "path": "/api/deleteItem"
         }
       }
-    }
-  ]
-}
-```
-
-### 带确认逻辑的按钮
-
-```json
-{
-  "id": "delete-btn",
-  "component": "button",
-  "label": "删除",
-  "on_tap": [
+    },
     {
-      "action": "http_proxy",
+      "action": "message",
       "payload": {
-        "http_config": {
-          "method": "DELETE",
-          "path": "/api/item/${id}"
-        }
+        "type": "success",
+        "content": "删除成功！"
       }
     }
   ]
 }
-```
-
-### 图标 + 文字按钮
-
-```json
-[
-  {
-    "id": "upload-btn",
-    "component": "button",
-    "children": ["upload-icon", "upload-text"]
-  },
-  {
-    "id": "upload-icon",
-    "component": "text",
-    "content": "📤"
-  },
-  {
-    "id": "upload-text",
-    "component": "text",
-    "content": "上传文件"
-  }
-]
 ```
 
 ## 新手常见问题
 
-**Q: 点击按钮没有反应？**
-- 检查 `on_tap` 是否配置了 `action`。
-- 如果在 `form` 内，确认按钮的 `id` 与 `form.submitButtonId` 一致。
-- 如果表单校验失败，按钮的 action 会被阻断。
+**Q: 为什么按钮点击后没有任何反应？**
+- 检查是否正确配置了 `on_tap` 属性，并且动作的语法符合 FAUI Action 规范。注意，不能使用原生的 `onClick`，FAUI 中必须使用 `on_tap` 数组。
 
-**Q: http_proxy 发送的请求体为空？**
-- 检查 `http_body` 中每个字段的 `path` 是否正确指向 `dataModel` 中的字段。
-- 确认 `dataModel` 中这些字段有值（可以先用一个 `text` 组件展示 `${$root.xxx}` 验证）。
+**Q: 按钮在表单中，但点击后没有触发校验？**
+- 确保该按钮的 ID 已经被配置到对应 `form` 的提交按钮列表（或通过隐式关联逻辑被识别为提交按钮）。
 
-**Q: 想在请求前做数据处理？**
-- 目前 `http_proxy` 的 `http_body` 支持简单的 path 替换。
-- 复杂的数据转换建议在传入 `Renderer` 之前，在 `httpRequest` 函数中处理。
-
-**Q: 按钮样式不符合预期？**
-- `button` 组件底层使用 Ant Design 的 `Button`，可以通过 `style` 传入 Ant Design 支持的样式属性，如 `{ "background": "#1890ff", "color": "#fff" }`。
+**Q: 配置了 children，但是按钮里只显示了 label 的文字？**
+- 根据组件逻辑，如果同时配置了 `label`（或 `content`）和 `children`，系统会优先渲染文本，并忽略 `children`。如果需要渲染子组件，请移除 `label` 和 `content` 属性。

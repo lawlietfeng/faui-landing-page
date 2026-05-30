@@ -1,216 +1,136 @@
 # input 组件
 
-`input` 是单行文本输入框组件，适用于姓名、邮箱、手机号、标题等单行文本输入场景。
+`input` 是单行文本输入框组件，适用于姓名、邮箱、手机号、标题等单行文本输入场景，默认集成了表单数据绑定与校验功能。
 
 ## 适用场景
 
-- 用户名、密码输入
-- 邮箱、手机号、证件号码
-- 搜索框
-- 任何需要用户输入单行文本的地方
+- **用户信息收集**：如用户名、密码、邮箱、手机号、证件号码。
+- **简单查询条件**：作为搜索框或筛选条件的输入。
+- **表单数据录入**：在 `form` 中配合 `rules` 使用，完成复杂的数据验证。
 
 ## 核心属性
 
-### placeholder（占位提示）
+| 属性名 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `value.path` | `string` | - | 双向绑定的数据路径。配合 `on_change` 实现输入回写。 |
+| `on_change` | `ActionConfig` | - | 文本改变时触发的动作。如果不配置但配置了 `value.path`，将默认执行回写数据的 fallback 操作。自定义 `on_change` 时，可通过 `${$value}` 引用组件的最新值。如果 on_change 中未设置 `value` 字段，组件会自动注入当前值；如果设置了自定义 `value` 表达式，组件会保留你的表达式不覆盖。 |
+| `placeholder` | `string` | - | 输入框为空时的提示文字，支持表达式插值。 |
+| `rules` | `FormRule[]` | - | 配合 `form` 校验的规则数组。 |
+| `validateTrigger` | `string` \| `string[]` | `"onChange"` | 触发校验的时机。可选值有 `"onChange"` 和 `"onBlur"`。 |
+| `field` | `string` | - | 表单注册的字段名，默认为 `value.path` 或 `id`。 |
 
-输入框为空时显示的提示文字：
+### value.path 与 on_change（数据双向绑定）
 
-```json
-{
-  "id": "name-input",
-  "component": "input",
-  "placeholder": "请输入姓名"
-}
-```
-
-### value.path（数据绑定）
-
-将输入框的值绑定到 `dataModel` 的某个字段。**这是实现数据读写的关键**。
-
-```json
-{
-  "id": "name-input",
-  "component": "input",
-  "value": { "path": "/name" }
-}
-```
-
-当用户在输入框中输入内容时，数据会保存到 `dataModel.name`。
-
-### on_change（值变化事件）
-
-**必须配置 `on_change`**，否则用户输入无法保存到数据模型中。
+将输入框的值绑定到全局状态的某个字段。`value.path` 用于从数据模型中读取初始值。
+当用户输入时，如果没有配置 `on_change`，引擎会自动通过 fallback 机制触发 `update_data` 回写对应路径的值；如果需要自定义操作，可配置 `on_change`。
 
 ```json
 {
   "id": "name-input",
   "component": "input",
   "placeholder": "请输入姓名",
-  "value": { "path": "/name" },
-  "on_change": {
-    "action": "update_data",
-    "path": "/name",
-    "value": "${value}"
+  "value": {
+    "path": "/userInfo/name"
   }
 }
 ```
 
-**`${value}` 是特殊变量**，代表用户当前输入的值。
+### placeholder（占位提示）
 
-> `value.path` 和 `on_change` **必须同时配置**，缺一不可：
-> - `value.path` 负责初始化时从 `dataModel` 读取默认值
-> - `on_change` 负责将用户输入回写到 `dataModel`
+输入框为空时显示的提示文字，支持表达式：
+
+```json
+{
+  "id": "search-input",
+  "component": "input",
+  "placeholder": "请输入你想搜索的${/category}..."
+}
+```
 
 ### rules（校验规则）
 
-配置输入校验规则，支持以下字段：
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `required` | `boolean` | 是否必填 |
-| `message` | `string` | 校验失败时的提示文案 |
-| `type` | `string` | 值类型：`string`/`number`/`boolean`/`array`/`object`/`email`/`url` |
-| `min` | `number` | 最小长度（字符串为字符数，数字为最小值） |
-| `max` | `number` | 最大长度（字符串为字符数，数字为最大值） |
-| `pattern` | `string` | 正则表达式（字符串） |
-| `enum` | `array` | 允许的值列表 |
-| `whitespace` | `boolean` | 是否允许纯空白 |
-
-```json
-{
-  "id": "name-input",
-  "component": "input",
-  "placeholder": "请输入姓名",
-  "value": { "path": "/name" },
-  "rules": [
-    { "required": true, "message": "请输入姓名" },
-    { "min": 2, "message": "姓名至少 2 个字符" },
-    { "max": 20, "message": "姓名最多 20 个字符" }
-  ],
-  "on_change": { "action": "update_data", "path": "/name", "value": "${value}" }
-}
-```
-
-### validateTrigger（触发校验的时机）
-
-| 值 | 何时触发校验 |
-|---|-------------|
-| `onChange`（默认） | 用户输入内容变化时 |
-| `onBlur` | 输入框失去焦点时 |
-| `["onChange", "onBlur"]` | 同时支持两种方式 |
-
-```json
-{
-  "id": "email-input",
-  "component": "input",
-  "value": { "path": "/email" },
-  "validateTrigger": ["onChange", "onBlur"],
-  "rules": [
-    { "required": true, "message": "请输入邮箱" },
-    { "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$", "message": "邮箱格式不正确" }
-  ],
-  "on_change": { "action": "update_data", "path": "/email", "value": "${value}" }
-}
-```
-
-### rules 的完整示例
-
-**必填校验**：
-```json
-{ "required": true, "message": "此项必填" }
-```
-
-**邮箱格式**：
-```json
-{ "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$", "message": "请输入正确的邮箱格式" }
-```
-
-**手机号（国内11位）**：
-```json
-{ "pattern": "^1[3-9]\\d{9}$", "message": "请输入正确的手机号" }
-```
-
-**最小/最大长度**：
-```json
-{ "min": 6, "max": 18, "message": "密码长度 6-18 位" }
-```
-
-**枚举值**：
-```json
-{ "enum": ["男", "女", "保密"], "message": "请选择性别" }
-```
-
-## 完整示例
-
-### 基础文本输入
-
-```json
-{
-  "id": "username-input",
-  "component": "input",
-  "placeholder": "请输入用户名",
-  "value": { "path": "/username" },
-  "rules": [
-    { "required": true, "message": "用户名不能为空" },
-    { "min": 3, "message": "用户名至少 3 个字符" }
-  ],
-  "on_change": { "action": "update_data", "path": "/username", "value": "${value}" }
-}
-```
-
-### 邮箱输入框
+配合表单组件，限制输入内容的格式、长度和是否必填等。
 
 ```json
 {
   "id": "email-input",
   "component": "input",
   "placeholder": "请输入邮箱",
-  "value": { "path": "/email" },
-  "validateTrigger": ["onChange", "onBlur"],
+  "value": {
+    "path": "/email"
+  },
   "rules": [
-    { "required": true, "message": "请输入邮箱" },
+    { "required": true, "message": "邮箱不能为空" },
     { "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$", "message": "邮箱格式不正确" }
-  ],
-  "on_change": { "action": "update_data", "path": "/email", "value": "${value}" }
+  ]
 }
 ```
 
-### 带初始值
+**常见 `rules` 配置：**
+- **必填校验**：`{ "required": true, "message": "此项必填" }`
+- **最小/最大长度**：`{ "min": 6, "max": 18, "message": "长度应在 6-18 位" }`
+- **正则表达式**：`{ "pattern": "^1[3-9]\\d{9}$", "message": "手机号不合法" }`
 
-在 `dataModel` 中设置初始值：
+### validateTrigger（触发校验时机）
+
+控制在什么时候对用户输入进行 `rules` 校验。
+
+| 值 | 效果 | 典型用途 |
+| --- | --- | --- |
+| `"onChange"` | 用户每次输入内容变化时立刻触发校验 | 默认行为，实时提示错误 |
+| `"onBlur"` | 输入框失去焦点时触发校验 | 避免用户输入一半时频繁提示错误（如手机号或邮箱校验） |
 
 ```json
 {
-  "dataModel": {
-    "name": "张三"
+  "id": "phone-input",
+  "component": "input",
+  "value": {
+    "path": "/phone"
+  },
+  "validateTrigger": ["onChange", "onBlur"]
+}
+```
+
+## 完整示例
+
+一个完整的带初始值和表单校验的输入框：
+
+```json
+{
+  "id": "username-input",
+  "component": "input",
+  "placeholder": "请输入至少3个字符的用户名",
+  "value": {
+    "path": "/form/username"
+  },
+  "validateTrigger": "onBlur",
+  "rules": [
+    {
+      "required": true,
+      "message": "用户名不能为空"
+    },
+    {
+      "min": 3,
+      "message": "用户名至少 3 个字符"
+    }
+  ],
+  "style": {
+    "width": "100%",
+    "marginBottom": 16
   }
 }
 ```
 
-这样 `value: { "path": "/name" }` 的输入框初始化时就会显示"张三"。
-
 ## 新手常见问题
 
-**Q: 输入内容后数据没有保存？**
-- 检查是否配置了 `on_change`，且 `action` 为 `update_data`，`path` 与 `value.path` 一致。
-- `on_change` 中的 `value` 必须写成 `"${value}"`（带 `${}` 语法），不能写成普通字符串。
+**Q: 为什么在输入框输入了内容，但点击提交时状态里没有这个值？**
+- 检查是否配置了 `value.path`，这是实现数据读写的关键。只要绑定了 `path`，即使不写 `on_change`，引擎也会自动 fallback 进行 `update_data` 记录最新值。
 
-**Q: 校验提示没有出现？**
-- 检查字段是否放在了 `form` 组件内，并设置了 `submitButtonId`。
-- 确认 `rules` 写在字段组件（`input`）上，而不是 `form` 上。
+**Q: 配置了 `rules` 校验为什么不生效 / 提示不出现？**
+- `rules` 校验功能必须在外层包裹一个 `form` 容器组件才能正常工作。如果只是散落的 `input`，`rules` 将不会进行校验拦截。
 
-**Q: 如何设置输入框的宽度？**
-- 使用 `style: { "width": "200px" }` 控制宽度。
-- 默认宽度是 100%，会填满父容器。
-
-**Q: 想限制只能输入数字？**
-- 目前 `input` 组件本身没有 `type="number"` 属性。
-- 可以通过 `pattern: "^\\d+$"` 限制只能输入数字，校验失败时会提示。
+**Q: 用户输入时频繁提示报错很烦人，怎么解决？**
+- 可以将 `validateTrigger` 修改为 `"onBlur"`，这样只有当用户填完离开输入框时，才会触发校验并显示红色报错提示。
 
 **Q: 初始值不显示？**
-- 确认 `dataModel` 中对应的字段有值，且类型是字符串。
-- 如果 `dataModel.name` 是 `""` 空字符串，输入框会显示为空，这是正常的。
-
-**Q: 为什么有两个 `message`？**
-- `rules` 是一个数组，可以配置多条规则，每条规则都可以有自己的 `message`。
-- 校验时会按顺序检查，第一条失败的规则会显示对应的 `message`。
+- 请确认你绑定的 `value.path` 对应的全局状态确实有值，且类型是字符串。如果是 `null` 或 `undefined`，输入框会显示为空。

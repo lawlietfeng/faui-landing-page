@@ -1,189 +1,158 @@
 # radio 组件
 
-`radio` 是单选按钮组组件，适用于从少量选项中选择一个的场景。
+`radio`（单选框）组件用于在多个互斥的选项中，让用户明确地选择其中一项。当选项较少且希望所有选项同时平铺展示时，它是最佳选择。
 
 ## 适用场景
 
-- 是/否、同意/拒绝
-- 少量选项（建议少于 5 个）的直接展示选择
-- 状态切换（如启用/禁用）
-- 需要用户直观看到所有选项的场景
-
-## 与 select 的区别
-
-| 特性 | radio | select |
-|------|-------|--------|
-| 选项可见性 | 所有选项同时可见 | 需点击展开下拉菜单 |
-| 适合选项数量 | 1-5 个 | 任意数量 |
-| 占用空间 | 较多 | 较少 |
-| 交互方式 | 点击即选 | 点击 → 展开 → 选择 |
-
-**建议**：选项少于等于 4 个时用 `radio`，选项更多时用 `select`。
+- **互斥选择**：如性别选择（男/女）、状态切换（公开/私密）。
+- **少量选项平铺**：选项数量建议在 2~5 个之间。如果选项过多，建议使用 `select`（选择器）组件。
 
 ## 核心属性
 
+| 属性名 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `value` | `ValueBinding` | - | 双向绑定的数据路径，用于回显和写入当前选中的值 |
+| `options` | `Array \| string` | - | 选项列表，支持通过插值表达式动态获取数组 |
+| `on_change` | `ActionConfig` | - | 选中项发生变化时的回调动作。自定义时可通过 `${$value}` 引用最新值，组件会保留你设置的自定义 `value` 表达式不覆盖。 |
+| `rules` | `FormRule[]` | - | 表单校验规则，支持必填等校验 |
+| `validateTrigger` | `string \| string[]` | `'onChange'` | 触发校验的时机 |
+
 ### options（选项列表）
+
+通过 `options` 定义单选框的每一个选项。你可以直接配置一个包含 `label`（显示文本）和 `value`（实际值）的数组，或者使用插值表达式绑定全局数据。
 
 ```json
 {
-  "id": "gender-radio",
   "component": "radio",
+  "id": "radio-static",
   "options": [
-    { "label": "男", "value": "male" },
-    { "label": "女", "value": "female" },
-    { "label": "保密", "value": "secret" }
+    { "label": "苹果", "value": "apple" },
+    { "label": "香蕉", "value": "banana" },
+    { "label": "橘子", "value": "orange" }
   ]
 }
 ```
 
-### value.path（数据绑定）
-
 ```json
 {
-  "id": "gender-radio",
   "component": "radio",
-  "value": { "path": "/gender" }
+  "id": "radio-dynamic",
+  "options": "${$root.fruitList}"
 }
 ```
 
-### on_change（值变化事件）
+### value & 双向绑定机制
 
-**必须配置**：
+`radio` 是一个受控表单组件。当你在 `value.path` 中指定了绑定路径后，组件会自动读取该路径的值作为初始选中状态。
 
-```json
-{
-  "id": "gender-radio",
-  "component": "radio",
-  "value": { "path": "/gender" },
-  "on_change": { "action": "update_data", "path": "/gender", "value": "${value}" }
-}
-```
-
-### rules（校验规则）
+**自动回写**：当用户点击切换选项时，如果没有显式配置 `on_change` 动作，引擎会自动触发 `update_data` 将最新的值回写到 `value.path` 路径下。这是推荐的标准用法。
 
 ```json
 {
-  "id": "confirm-radio",
   "component": "radio",
-  "value": { "path": "/confirmed" },
+  "id": "radio-binding",
+  "value": {
+    "path": "/form/fruit"
+  },
   "options": [
-    { "label": "同意", "value": "yes" },
-    { "label": "拒绝", "value": "no" }
+    { "label": "苹果", "value": "apple" },
+    { "label": "香蕉", "value": "banana" }
+  ]
+}
+```
+
+### rules（表单校验）
+
+结合 `form` 组件使用时，可以配置校验规则。比如设置 `required` 确保用户必须选择一项。
+
+```json
+{
+  "component": "radio",
+  "id": "radio-rules",
+  "value": {
+    "path": "/form/gender"
+  },
+  "options": [
+    { "label": "男", "value": "male" },
+    { "label": "女", "value": "female" }
   ],
-  "rules": [{ "required": true, "message": "请选择一个选项" }],
-  "on_change": { "action": "update_data", "path": "/confirmed", "value": "${value}" }
+  "rules": [
+    {
+      "required": true,
+      "message": "请务必选择您的性别"
+    }
+  ]
+}
+```
+
+## 高级用法：自定义 on_change 拦截
+
+如果不仅想回写数据，还想在用户切换单选框时立刻发起请求（如按类别筛选列表），你可以显式配置 `on_change` 动作。配置后，引擎**不再自动回写**，而是直接执行你配置的动作（此时最新的值会被注入到 `payload.value` 或可通过动作内的模板读取）。
+
+```json
+{
+  "component": "radio",
+  "id": "radio-onchange",
+  "value": {
+    "path": "/filter/status"
+  },
+  "options": [
+    { "label": "全部", "value": "all" },
+    { "label": "已完成", "value": "done" }
+  ],
+  "on_change": [
+    {
+      "action": "update_data",
+      "path": "/filter/status",
+      "value": "${value}"
+    },
+    {
+      "action": "http_proxy",
+      "payload": {
+        "http_config": {
+          "url": "/api/getList",
+          "method": "GET"
+        }
+      }
+    }
+  ]
 }
 ```
 
 ## 完整示例
 
-### 基础单选组
+这是一个在真实表单中收集用户意见反馈的单选组配置：
 
 ```json
 {
-  "id": "gender-radio",
   "component": "radio",
-  "value": { "path": "/gender" },
-  "options": [
-    { "label": "男", "value": "male" },
-    { "label": "女", "value": "female" },
-    { "label": "保密", "value": "secret" }
-  ],
-  "on_change": { "action": "update_data", "path": "/gender", "value": "${value}" }
-}
-```
-
-### 同意协议
-
-```json
-{
-  "id": "agree-radio",
-  "component": "radio",
-  "value": { "path": "/agreement" },
-  "options": [
-    { "label": "我已阅读并同意《用户协议》", "value": "agreed" }
-  ],
-  "rules": [{ "required": true, "message": "请同意用户协议" }],
-  "on_change": { "action": "update_data", "path": "/agreement", "value": "${value}" }
-}
-```
-
-### 优先级选择
-
-```json
-{
-  "id": "priority-radio",
-  "component": "radio",
-  "value": { "path": "/priority" },
-  "options": [
-    { "label": "🟢 低", "value": "low" },
-    { "label": "🟡 中", "value": "medium" },
-    { "label": "🔴 高", "value": "high" }
-  ],
-  "rules": [{ "required": true, "message": "请选择优先级" }],
-  "on_change": { "action": "update_data", "path": "/priority", "value": "${value}" }
-}
-```
-
-### 在表单中使用
-
-```json
-[
-  {
-    "id": "survey-form",
-    "component": "form",
-    "submitButtonId": "submit-btn",
-    "children": ["name-input", "satisfaction-radio", "submit-btn"]
+  "id": "radio-survey",
+  "value": {
+    "path": "/survey/satisfaction"
   },
-  {
-    "id": "name-input",
-    "component": "input",
-    "placeholder": "请输入姓名",
-    "value": { "path": "/name" },
-    "rules": [{ "required": true, "message": "请输入姓名" }],
-    "on_change": { "action": "update_data", "path": "/name", "value": "${value}" }
-  },
-  {
-    "id": "satisfaction-radio",
-    "component": "radio",
-    "value": { "path": "/satisfaction" },
-    "options": [
-      { "label": "非常满意", "value": "very_satisfied" },
-      { "label": "满意", "value": "satisfied" },
-      { "label": "一般", "value": "neutral" },
-      { "label": "不满意", "value": "dissatisfied" }
-    ],
-    "rules": [{ "required": true, "message": "请选择满意度" }],
-    "on_change": { "action": "update_data", "path": "/satisfaction", "value": "${value}" }
-  },
-  {
-    "id": "submit-btn",
-    "component": "button",
-    "label": "提交",
-    "on_tap": [
-      { "action": "http_proxy", "payload": { "http_config": { "method": "POST", "path": "/api/survey" } } }
-    ]
-  }
-]
+  "options": [
+    { "label": "非常满意", "value": "5" },
+    { "label": "比较满意", "value": "4" },
+    { "label": "一般", "value": "3" },
+    { "label": "不满意", "value": "2" },
+    { "label": "极差", "value": "1" }
+  ],
+  "rules": [
+    {
+      "required": true,
+      "message": "此题为必答题，请选择您的满意度"
+    }
+  ]
+}
 ```
 
 ## 新手常见问题
 
-**Q: 选项太多，想用下拉框？**
-- 切换为 `select` 组件即可。
+**Q: 为什么旧文档里说 `on_change` 必须配置？**
+- 那是旧版引擎的遗留认知。现在的 FAUI 引擎已经支持**自动 fallback 回写机制**。只要配置了 `value.path` 且不配置 `on_change`，引擎就会自动执行 `update_data` 回写。旧文档的描述已经过时。
 
-**Q: 只想显示一个选项（如"同意协议"）？**
-- 可以，只需要在 `options` 中放一个选项。
-- 这种情况更推荐使用 `checkbox` 组件。
+**Q: 我想要单选框横向排列/竖向排列怎么做？**
+- 默认情况下，Ant Design 的 Radio.Group 是水平排列的（只要空间足够）。如果需要强制垂直排列，可以通过在 `style` 中配置 `display: flex` 和 `flexDirection: column` 等样式属性，或者调整外层容器的布局。
 
-**Q: 选中的值没有同步到 dataModel？**
-- 检查 `on_change` 是否配置，且 `action` 为 `update_data`。
-- 确认 `value.path` 和 `on_change.path` 一致。
-
-**Q: 想让选项横向排列？**
-- 可以用 `box` 包裹 `radio`，设置 `box.layout: "horizontal"`。
-- 但注意 `radio` 组件本身不支持横向排列。
-
-**Q: 为什么需要 rules 配置 required？**
-- 即使 `options` 中只有一个选项，不选中也可以提交。
-- 如果业务要求必须选择，配置 `required: true` 后提交时会出现错误提示。
+**Q: 只有“同意”一个选项，能用 `radio` 吗？**
+- 只有一个选项（如“同意协议”）并且可以取消选中的场景，**强烈建议使用 `checkbox` 组件**。`radio` 的交互语义是一旦选中就无法点击自身取消选中，必须通过选择其他选项来切换。

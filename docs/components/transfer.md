@@ -1,239 +1,171 @@
 # transfer 组件
 
-`transfer` 是穿梭框组件，用于在两个列表之间移动数据，常用于权限分配、角色分配、数据筛选等需要双向移动操作的场景。
+穿梭框组件，用于直观地在两个列表之间移动和分配数据。常用于角色权限分配、多选项筛选或任何需要明确展示“未选”与“已选”状态的复杂多选场景。
 
 ## 适用场景
 
-- 用户角色权限分配（将用户从"可分配"移到"已分配"）
-- 多选数据筛选（将数据从"全部"移到"已选择"）
-- 标签管理（如给文章分配标签）
-- 任何需要从一组选项中选择多个的场景
-
-## 核心概念
-
-穿梭框的工作方式：
-- **左侧列表**（Source）：可选择的数据源
-- **右侧列表**（Target）：已选择的数据
-- 用户通过"添加/移除"按钮在两个列表之间移动数据
+- **权限/角色分配**：将特定权限从“可用权限库”分配给某个用户。
+- **员工/人员调度**：在项目团队中添加或移除成员。
+- **复杂多选**：当选项较多（如超过 10 项）且需要让用户清晰看到已选列表时，使用 `transfer` 优于 `select` (多选)。
 
 ## 核心属性
 
+| 属性名 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `options` | `Array \| string` | `[]` | **必填**，数据源配置数组，支持插值表达式动态获取全局数据 |
+| `value.path` | `string` | - | **必填**，双向绑定的数据路径，值将是一个包含所有“已选项” `value` 的字符串数组 |
+
 ### options（数据源选项）
 
-定义左侧可选的数据列表：
+`options` 决定了穿梭框左侧（默认状态）的可用数据源。每个选项支持以下属性：
+- `label`：展示给用户看的文本。
+- `value`：选中后实际提交和绑定的值。
+- `disabled`：是否禁用该选项（禁用后无法移动）。
+- `description`：补充描述信息（根据底层 Ant Design 渲染器可能不会直接展示，但常用于保留元数据）。
+
+**注意**：`options` 必须通过 `useExpression` 进行整体求值。你可以直接硬编码，也可以通过表达式从后端接口获取。
 
 ```json
 {
-  "id": "role-transfer",
-  "component": "transfer",
-  "options": [
-    { "value": "1", "label": "管理员" },
-    { "value": "2", "label": "运营人员" },
-    { "value": "3", "label": "编辑" },
-    { "value": "4", "label": "访客" }
-  ]
+  "id": "role_transfer",
+  "type": "element",
+  "config": {
+    "component": "transfer",
+    "options": [
+      { "value": "admin", "label": "系统管理员" },
+      { "value": "editor", "label": "内容编辑", "disabled": true },
+      { "value": "viewer", "label": "访客" }
+    ],
+    "value": { "path": "/assignedRoles" }
+  }
 }
 ```
 
-- `value`：选中后实际保存的值
-- `label`：显示给用户的文本
-
-### value.path（数据绑定）
-
-绑定到 `dataModel`，值是右侧列表（已选择）的 `targetKeys`：
-
+动态绑定数据源：
 ```json
 {
-  "id": "role-transfer",
-  "component": "transfer",
-  "value": { "path": "/assignedRoles" }
+  "id": "dynamic_transfer",
+  "type": "element",
+  "config": {
+    "component": "transfer",
+    "options": "${/api/allRolesList}",
+    "value": { "path": "/assignedRoles" }
+  }
 }
 ```
 
-假设用户选择了"管理员"和"编辑"，则 `dataModel.assignedRoles` 的值为 `["1", "3"]`。
+## 数据绑定与回写 (value.path & on_change)
 
-### on_change（值变化事件）
+穿梭框的核心逻辑是：将 `options` 中的部分项，移动到右侧（即选中的 `targetKeys` 集合）。
+这个集合的值必须绑定到全局的 `dataModel` 中。
 
-**必须配置**：
-
-```json
-{
-  "id": "role-transfer",
-  "component": "transfer",
-  "value": { "path": "/assignedRoles" },
-  "on_change": { "action": "update_data", "path": "/assignedRoles", "value": "${value}" }
-}
-```
-
-`${value}` 是右侧列表中被选中的 `value` 数组。
-
-### rules（校验规则）
+1. **自动回写**：只要配置了 `value.path`，组件内部会自动 fallback 触发 `update_data`，将右侧列表的字符串数组写回全局状态，并触发所在表单的校验。
+2. **自定义回调**：如果你配置了 `on_change`，必须自己在动作流中添加 `update_data` 以保证数据更新。在 `on_change` 中，你可以通过 `${$value}` 获取到最新的、完整的已选项数组。如果 on_change 中未设置 `value` 字段，组件会自动注入当前值；如果设置了自定义 `value` 表达式，组件会保留你的表达式不覆盖。
 
 ```json
 {
-  "id": "role-transfer",
-  "component": "transfer",
-  "rules": [
-    { "required": true, "message": "请至少分配一个角色" },
-    { "type": "array", "min": 1, "message": "必须为用户分配至少 1 个角色" }
-  ]
+  "id": "form_transfer",
+  "type": "element",
+  "config": {
+    "component": "transfer",
+    "field": "roles",
+    "options": [
+      { "value": "1", "label": "选项 1" },
+      { "value": "2", "label": "选项 2" }
+    ],
+    "value": { "path": "/form/roles" },
+    "rules": [
+      { "required": true, "message": "请至少分配一个权限" },
+      { "type": "array", "min": 2, "message": "至少需要分配 2 个权限" }
+    ]
+  }
 }
 ```
 
 ## 完整示例
 
-### 角色权限分配
-
-```json
-{
-  "id": "role-transfer",
-  "component": "transfer",
-  "options": [
-    { "value": "admin", "label": "管理员" },
-    { "value": "editor", "label": "内容编辑" },
-    { "value": "viewer", "label": "仅查看" },
-    { "value": "billing", "label": "财务权限" },
-    { "value": "hr", "label": "人事权限" },
-    { "value": "it", "label": "IT 权限" }
-  ],
-  "value": { "path": "/userRoles" },
-  "rules": [
-    { "required": true, "message": "请为用户分配角色" },
-    { "type": "array", "min": 1, "message": "至少需要分配一个角色" }
-  ],
-  "on_change": { "action": "update_data", "path": "/userRoles", "value": "${value}" }
-}
-```
-
-### 标签分配
-
-```json
-{
-  "id": "tag-transfer",
-  "component": "transfer",
-  "options": [
-    { "value": "important", "label": "重要" },
-    { "value": "urgent", "label": "紧急" },
-    { "value": "frontend", "label": "前端" },
-    { "value": "backend", "label": "后端" },
-    { "value": "design", "label": "设计" },
-    { "value": "bug", "label": "Bug" },
-    { "value": "feature", "label": "新功能" },
-    { "value": "docs", "label": "文档" }
-  ],
-  "value": { "path": "/taskTags" },
-  "rules": [{ "required": true, "message": "请至少选择一个标签" }],
-  "on_change": { "action": "update_data", "path": "/taskTags", "value": "${value}" }
-}
-```
-
-### 员工选择
-
-```json
-{
-  "id": "employee-transfer",
-  "component": "transfer",
-  "options": [
-    { "value": "e001", "label": "张三（研发部）" },
-    { "value": "e002", "label": "李四（产品部）" },
-    { "value": "e003", "label": "王五（设计部）" },
-    { "value": "e004", "label": "赵六（市场部）" },
-    { "value": "e005", "label": "孙七（运营部）" },
-    { "value": "e006", "label": "周八（人事部）" }
-  ],
-  "value": { "path": "/assignedEmployees" },
-  "rules": [{ "required": true, "message": "请至少选择一名员工" }],
-  "on_change": { "action": "update_data", "path": "/assignedEmployees", "value": "${value}" }
-}
-```
-
-### 在表单中使用
+一个包含动态选项拉取、表单校验以及双向绑定的角色分配场景：
 
 ```json
 [
   {
-    "id": "permission-form",
-    "component": "form",
-    "submitButtonId": "submit-btn",
-    "children": ["user-select", "role-transfer", "submit-btn"]
+    "id": "permission_form",
+    "type": "element",
+    "config": {
+      "component": "form",
+      "submitButtonId": "submit_btn",
+      "children": ["user_select", "role_transfer", "submit_btn"]
+    }
   },
   {
-    "id": "user-select",
-    "component": "select",
-    "placeholder": "请选择用户",
-    "value": { "path": "/userId" },
-    "options": [
-      { "label": "用户 A", "value": "user_a" },
-      { "label": "用户 B", "value": "user_b" },
-      { "label": "用户 C", "value": "user_c" }
-    ],
-    "rules": [{ "required": true, "message": "请选择用户" }],
-    "on_change": { "action": "update_data", "path": "/userId", "value": "${value}" }
+    "id": "user_select",
+    "type": "element",
+    "config": {
+      "component": "select",
+      "placeholder": "请选择要分配权限的用户",
+      "value": { "path": "/currentUser" },
+      "options": [
+        { "label": "张三", "value": "U001" },
+        { "label": "李四", "value": "U002" }
+      ],
+      "rules": [{ "required": true, "message": "必须选择用户" }]
+    }
   },
   {
-    "id": "role-transfer",
-    "component": "transfer",
-    "options": [
-      { "value": "admin", "label": "管理员" },
-      { "value": "editor", "label": "编辑" },
-      { "value": "viewer", "label": "查看者" },
-      { "value": "billing", "label": "财务" }
-    ],
-    "value": { "path": "/roles" },
-    "rules": [
-      { "required": true, "message": "请分配角色" },
-      { "type": "array", "min": 1, "message": "至少需要分配一个角色" }
-    ],
-    "on_change": { "action": "update_data", "path": "/roles", "value": "${value}" }
+    "id": "role_transfer",
+    "type": "element",
+    "config": {
+      "component": "transfer",
+      "options": [
+        { "value": "admin", "label": "管理员" },
+        { "value": "editor", "label": "内容编辑" },
+        { "value": "viewer", "label": "仅查看" },
+        { "value": "billing", "label": "财务权限" }
+      ],
+      "value": { "path": "/assignedRoles" },
+      "rules": [
+        { "required": true, "message": "请分配角色" }
+      ]
+    }
   },
   {
-    "id": "submit-btn",
-    "component": "button",
-    "label": "保存权限",
-    "on_tap": [
-      { "action": "http_proxy", "payload": { "http_config": { "method": "POST", "path": "/api/permission" } } }
-    ]
+    "id": "submit_btn",
+    "type": "element",
+    "config": {
+      "component": "button",
+      "label": "保存权限",
+      "on_tap": [
+        { 
+          "action": "http_proxy", 
+          "payload": { 
+            "http_config": { 
+              "method": "POST", 
+              "path": "/api/assign-roles" 
+            } 
+          } 
+        }
+      ]
+    }
   }
 ]
 ```
 
 ## 新手常见问题
 
-**Q: 右侧列表的值是什么格式？**
-- 是一个数组，包含被选中项的 `value` 字段值。
-- 例如 `["admin", "editor"]` 表示选中了"管理员"和"编辑"。
-
-**Q: 初始值如何设置？**
-- 在 `dataModel` 中设置数组：
-```json
-{
-  "dataModel": {
-    "userRoles": ["admin", "editor"]
+**Q: 穿梭框的初始值怎么设置？**
+- 穿梭框的选中状态完全由 `value.path` 绑定的全局变量控制。如果需要在页面加载时右侧就已经有选中的项，只需在初始化的 `dataModel` 中为对应的路径赋值即可。
+  ```json
+  // dataModel 初始化
+  {
+    "assignedRoles": ["admin", "editor"]
   }
-}
-```
-这样页面的穿梭框右侧会显示"管理员"和"编辑"。
+  ```
 
-**Q: 可以设置数据源的总数据量吗？**
-- `options` 会完整显示在左侧列表。
-- 如需分页，可以配合其他 UI 元素实现。
+**Q: `options` 里的 `value` 可以是数字吗？**
+- 引擎底层在处理时会将 `value` 强制转换为字符串（`String(opt.value)`），并且在回写状态时也是写回 `string[]`。建议在配置和后端交互时，统一将 ID 或枚举值视为字符串处理，以避免类型不匹配的边界问题。
 
-**Q: 穿梭框支持搜索过滤吗？**
-- 默认会有简单的搜索框。
-- 如果需要更复杂的搜索功能，可能需要自定义实现。
+**Q: 为什么右侧列表没有显示 `label`？**
+- 请检查 `options` 数组的结构是否规范，必须包含 `label` 和 `value` 字段。引擎会将 `label` 映射为选项的显示文本。
 
-**Q: `oneWay` 模式是什么意思？**
-- `oneWay: true` 时，只能从左移到右，不能从右移除回左边。
-- 适用于"分配"场景，移除需要通过其他方式（如清空操作）。
-
-**Q: 穿梭框支持禁用某些选项吗？**
-- 目前 `options` 中的每个选项没有直接的 `disabled` 属性。
-- 如需禁用特定选项，需要在 `options` 中排除或自定义处理。
-
-**Q: 如何自定义左右列表的表头标题？**
-- 目前穿梭框的表头标题是默认的。
-- 如需自定义，可能需要通过样式覆盖或自定义组件实现。
-
-**Q: `on_change` 的 `${value}` 每次都是完整的数组吗？**
-- 是的，每次变化时 `${value}` 是右侧列表的完整 `value` 数组。
-- 不是增量变化，而是全量替换。
+**Q: 穿梭框可以支持拖拽排序或者搜索吗？**
+- 目前 FAUI 的 `transfer` 实现了最核心的左右移动与表单校验功能。更高级的功能（如内置搜索框 `showSearch` 或自定义渲染函数）暂时未暴露配置。如果业务强依赖搜索，建议在穿梭框上方单独增加一个 `input` 并结合插值表达式过滤 `options` 数组。

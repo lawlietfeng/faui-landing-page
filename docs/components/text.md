@@ -1,190 +1,136 @@
 # text 组件
 
-`text` 组件用于在页面上展示文本内容，支持静态文案和动态表达式两种模式。
+`text` 是最基础的文本展示组件，用于在页面上渲染一段文字，支持静态文案和基于全局状态的动态插值表达式。
 
 ## 适用场景
 
-- 页面标题、副标题、段落文字
-- 动态展示数据模型中的值（如用户名、状态描述）
-- 条件性显示不同的提示文案
+- **页面标题/段落**：展示纯文本标题、说明文案。
+- **数据展示**：将 `dataModel` 中的动态数据（如用户名、状态描述、金额等）直接渲染到页面上。
+- **条件提示**：结合 `visible` 属性实现条件性提示文案。
 
 ## 核心属性
 
-### content（文本内容）
+| 属性名 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `content` | `string` | - | 文本内容，支持 `${}` 插值表达式 |
+| `style` | `object` | - | 自定义 CSS 样式（如字号、颜色、粗细等） |
 
-`content` 支持两种形式：
+### content（文本与插值）
 
-**1. 静态文案（普通字符串）**
+`content` 支持普通的静态字符串，更重要的是它支持使用 `${}` 语法读取 `dataModel` 中的动态数据或执行 JavaScript 表达式。
 
+**1. 静态文本**
 ```json
 {
-  "id": "title",
+  "id": "page-title",
   "component": "text",
-  "content": "用户信息"
+  "content": "基本信息设置"
 }
 ```
 
-**2. 动态表达式（模板字符串）**
-
-在 `content` 中使用 `${...}` 语法，可以读取数据模型中的值：
-
+**2. 动态插值**
+使用 `${}` 可以访问全局的 `dataModel`（默认上下文为全局变量）。
 ```json
 {
-  "id": "welcome",
+  "id": "welcome-text",
   "component": "text",
-  "content": "欢迎，${name}"
+  "content": "欢迎回来，${userInfo.nickname}！您当前的积分为 ${userInfo.score}。"
 }
 ```
 
-当 `dataModel.name` 为 `"张三"` 时，页面显示：`欢迎，张三`
+**3. 三元表达式**
+可以利用插值执行简单的逻辑判断：
+```json
+{
+  "id": "status-text",
+  "component": "text",
+  "content": "当前状态：${isActive ? '已激活' : '未激活'}"
+}
+```
 
-### 表达式上下文变量
+### 上下文变量 `$root` 与 `$current`
 
-在 `text` 的 `content` 中，可以使用以下变量访问数据：
-
-| 变量 | 含义 | 示例 |
-|------|------|------|
-| `$root` | 整个页面的 `dataModel` 对象 | `${$root.name}` |
-| `$current` | 当前列表/表格行数据（仅在 list/table 中生效） | `${$current.status}` |
-
-**简单场景**：`content: "用户名：${name}"` 等同于 `content: "用户名：${$root.name}"`。
-
-### style（文本样式）
-
-通过 `style` 对象设置 CSS 样式：
+当 `text` 组件单独存在时，`${name}` 等同于 `${$root.name}`。
+当 `text` 组件被嵌套在 `list` 或 `table` 等具有**局部作用域**的列表组件中时，你可以使用：
+- `$current`：访问当前循环项的数据。
+- `$root`：访问最外层全局的 `dataModel` 数据。
 
 ```json
 {
-  "id": "title",
+  "id": "list-item-text",
   "component": "text",
-  "content": "页面标题",
+  "content": "商品：${$current.productName}，全场折扣：${$root.globalDiscount}"
+}
+```
+
+### style（文本排版）
+
+`text` 组件底层渲染为原生的 `<span>` 元素。你可以通过 `style` 属性自由控制其文字排版。
+
+```json
+{
+  "id": "price-text",
+  "component": "text",
+  "content": "¥ ${price.toFixed(2)}",
   "style": {
-    "fontSize": "20px",
+    "fontSize": "24px",
     "fontWeight": "bold",
-    "color": "#1f2937"
+    "color": "#f5222d",
+    "display": "block",
+    "marginTop": "12px"
   }
-}
-```
-
-### className（CSS 类名）
-
-如果项目使用了 Tailwind CSS 或自定义 CSS，可以通过 `className` 添加类名：
-
-```json
-{
-  "id": "hint",
-  "component": "text",
-  "content": "带 class 渲染的文字",
-  "className": "text-gray-500 text-sm"
 }
 ```
 
 ## 完整示例
 
-### 基础用法
+结合条件展示与样式的组合应用：
 
 ```json
-{
-  "id": "header-title",
-  "component": "text",
-  "content": "申请表单",
-  "style": {
-    "fontSize": "18px",
-    "fontWeight": "bold",
-    "color": "#1f2937"
+[
+  {
+    "id": "balance-box",
+    "component": "box",
+    "layout": "horizontal",
+    "spacing": 8,
+    "align": "baseline",
+    "children": ["balance-label", "balance-value", "balance-warning"]
+  },
+  {
+    "id": "balance-label",
+    "component": "text",
+    "content": "账户余额："
+  },
+  {
+    "id": "balance-value",
+    "component": "text",
+    "content": "¥ ${balance}",
+    "style": {
+      "fontSize": "20px",
+      "fontWeight": 600,
+      "color": "${balance < 100 ? '#cf1322' : '#389e0d'}"
+    }
+  },
+  {
+    "id": "balance-warning",
+    "component": "text",
+    "content": "（余额不足，请尽快充值）",
+    "visible": "${balance < 100}",
+    "style": {
+      "color": "#cf1322",
+      "fontSize": "12px"
+    }
   }
-}
+]
 ```
-
-### 动态拼接
-
-```json
-{
-  "id": "status-text",
-  "component": "text",
-  "content": "当前状态：${status}",
-  "style": {
-    "fontSize": "14px",
-    "color": "#6b7280"
-  }
-}
-```
-
-### 三元表达式
-
-`content` 中可以使用 JavaScript 三元表达式：
-
-```json
-{
-  "id": "vip-badge",
-  "component": "text",
-  "content": "${isVip ? 'VIP用户' : '普通用户'}",
-  "style": {
-    "color": "${isVip ? '#ffd700' : '#9ca3af'}"
-  }
-}
-```
-
-当 `isVip` 为 `true` 时显示金色"VIP用户"，否则显示灰色"普通用户"。
-
-### 读取嵌套对象
-
-```json
-{
-  "id": "user-info",
-  "component": "text",
-  "content": "${user.name}（${user.department}）"
-}
-```
-
-假设 `dataModel.user = { name: "李四", department: "研发部" }`，则渲染为：`李四（研发部）`
-
-### 数字运算与格式化
-
-```json
-{
-  "id": "price",
-  "component": "text",
-  "content": "总价：¥${(price * count).toFixed(2)}"
-}
-```
-
-## visible 条件显示
-
-`text` 也支持 `visible` 属性控制是否显示：
-
-```json
-{
-  "id": "error-tip",
-  "component": "text",
-  "content": "请检查输入内容",
-  "visible": "${hasError} === true",
-  "style": {
-    "color": "#ef4444",
-    "fontSize": "12px"
-  }
-}
-```
-
-当 `dataModel.hasError` 为 `true` 时才显示错误提示。
-
-## 与 children 的区别
-
-`text` 组件的 `content` 是一种简化的文本渲染方式。如果需要更复杂的子组件结构（如文本中混合图片、超链接等），应使用 `box` 容器 + 多个子组件的方式。
-
-对于纯文本展示场景，直接使用 `text` + `content` 更简洁。
 
 ## 新手常见问题
 
-**Q: content 中的 `${name}` 没有被替换，显示的就是 `${name}`？**
-- 检查表达式语法是否正确：`${` 和 `}` 必须成对出现。
-- 如果字段名本身包含特殊字符，需要用引号包裹：`${$root['field-name']}`。
+**Q: `${name}` 没有被替换，页面上原样输出了 `${name}`？**
+- 请检查 `${}` 的语法是否正确，以及 `name` 是否在 `dataModel` 中存在。如果变量不存在，它可能会渲染为 `undefined`，或者在某些复杂表达式出错时导致整个字符串不被解析。
 
-**Q: 想显示美元符号 `$` 怎么办？**
-- 使用转义：`\$` 会渲染为 `$`。
+**Q: 为什么我设置了 `marginTop` 但没有生效？**
+- `text` 组件底层是 `<span>`，这是一个行内元素（inline）。行内元素不支持垂直方向的 margin/padding。你可以通过 `style: { "display": "block" }` 或 `display: "inline-block"` 将其转换为块级元素。
 
-**Q: text 组件显示的内容没有样式？**
-- `text` 组件默认渲染为 `<span>` 元素。如果需要块级元素（占满整行），可以用 `style` 设置 `display: "block"`。
-
-**Q: 动态内容没有更新？**
-- `text` 的 `content` 在组件渲染时求值。如果数据在运行时变化，需要确认数据更新时触发了重新渲染。faui 的响应式机制会在 `dataModel` 变化时自动更新依赖的组件。
+**Q: 如果我想在文本里显示真实的美元符号 `$` 怎么办？**
+- 如果字符串中有不打算作为表达式解析的 `$`, 可以在 `${}` 之外直接写 `$`。例如 `"总计：$ ${amount}"`。只有紧跟 `{` 的 `${` 才会被当做表达式的起点。

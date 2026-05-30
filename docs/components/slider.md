@@ -4,17 +4,25 @@
 
 ## 适用场景
 
-- 价格区间筛选
-- 音量/亮度调节
-- 评分（配合数字显示）
-- 数值范围选择
-- 任何需要滑动选择的连续值场景
+- **范围筛选**：如价格区间、时间区间等。
+- **连续值调节**：如音量、亮度、缩放比例调节。
+- **评分选择**：配合数值显示，提供直观的拖动体验。
 
 ## 核心属性
 
+| 属性 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| min | `number \| string` | `0` | 最小值（支持 `useExpression` 插值） |
+| max | `number \| string` | `100` | 最大值（支持 `useExpression` 插值） |
+| step | `number \| string` | `1` | 每次拖动的最小单位步长（支持 `useExpression` 插值） |
+| range | `boolean \| string` | `false` | 是否开启双滑块模式，开启后返回范围数组（支持 `useExpression` 插值） |
+| disabled | `boolean \| string` | `false` | 是否禁用滑块（支持 `useExpression` 插值） |
+| value.path | `string` | - | 绑定的数据源路径 |
+| on_change | `ActionConfig` | - | 值变化时触发的事件（未配置且有 path 时自动触发 update_data）。自定义时可通过 `${$value}` 引用最新值，组件会保留你设置的自定义 `value` 表达式不覆盖。 |
+
 ### min / max（最小值/最大值）
 
-设置滑动范围：
+设置滑动范围的上下限：
 
 ```json
 {
@@ -27,7 +35,7 @@
 
 ### step（步长）
 
-每次拖动的最小单位：
+设置每次拖动的最小单位：
 
 ```json
 {
@@ -39,11 +47,9 @@
 }
 ```
 
-设置为 `1` 则每次变化 1；设置为 `10` 则每次变化 10。
+### range（双滑块模式）
 
-### range（是否双滑块模式）
-
-设置为 `true` 可以同时选择范围（两个值）：
+开启双滑块模式后，滑块可选择一段范围，绑定的数据也将变成数组格式 `[min, max]`：
 
 ```json
 {
@@ -51,80 +57,33 @@
   "component": "slider",
   "min": 0,
   "max": 1000,
-  "step": 10,
-  "range": true
-}
-```
-
-- `false`（默认）：单滑块，返回一个数值
-- `true`：双滑块，返回 `[min, max]` 数组
-
-### value.path（数据绑定）
-
-**单滑块模式**（`range: false`）：
-
-```json
-{
-  "id": "volume-slider",
-  "component": "slider",
-  "value": { "path": "/volume" }
-}
-```
-
-**双滑块模式**（`range: true`）：
-
-```json
-{
-  "id": "price-slider",
-  "component": "slider",
   "range": true,
-  "value": { "path": "/priceRange" }
+  "value": {
+    "path": "/priceRange"
+  }
 }
 ```
 
-双滑块模式下，`dataModel.priceRange` 应为数组，如 `[100, 500]`。
+### disabled（禁用）
 
-### on_change（值变化事件）
-
-**必须配置**：
+将滑块设为禁用状态，无法拖动：
 
 ```json
 {
-  "id": "price-slider",
+  "id": "disabled-slider",
   "component": "slider",
-  "range": true,
-  "value": { "path": "/priceRange" },
-  "on_change": { "action": "update_data", "path": "/priceRange", "value": "${value}" }
-}
-```
-
-### rules（校验规则）
-
-```json
-{
-  "id": "price-slider",
-  "component": "slider",
-  "rules": [{ "required": true, "message": "请选择价格范围" }]
+  "disabled": true,
+  "value": {
+    "path": "/volume"
+  }
 }
 ```
 
 ## 完整示例
 
-### 基础单滑块
+### 基础单滑块与双向绑定
 
-```json
-{
-  "id": "volume-slider",
-  "component": "slider",
-  "min": 0,
-  "max": 100,
-  "step": 1,
-  "value": { "path": "/volume" },
-  "on_change": { "action": "update_data", "path": "/volume", "value": "${value}" }
-}
-```
-
-### 带当前值显示的滑块
+配合 `text` 组件实时显示当前拖动的值。
 
 ```json
 [
@@ -142,55 +101,21 @@
     "min": 0,
     "max": 100,
     "step": 1,
-    "value": { "path": "/volume" },
-    "on_change": { "action": "update_data", "path": "/volume", "value": "${value}" }
+    "value": {
+      "path": "/volume"
+    }
   },
   {
     "id": "volume-value",
     "component": "text",
-    "content": "${$root.volume ?? 0}"
+    "content": "当前音量: ${$root.volume ?? 0}"
   }
 ]
 ```
 
-### 价格范围（双滑块）
+### 价格区间筛选（表单场景）
 
-```json
-{
-  "id": "price-range-slider",
-  "component": "slider",
-  "min": 0,
-  "max": 10000,
-  "step": 100,
-  "range": true,
-  "value": { "path": "/priceRange" },
-  "rules": [{ "required": true, "message": "请选择价格范围" }],
-  "on_change": { "action": "update_data", "path": "/priceRange", "value": "${value}" }
-}
-```
-
-### 带刻度标记的滑块
-
-```json
-{
-  "id": "level-slider",
-  "component": "slider",
-  "min": 0,
-  "max": 100,
-  "step": 25,
-  "marks": {
-    "0": "0",
-    "25": "25",
-    "50": "50",
-    "75": "75",
-    "100": "100"
-  },
-  "value": { "path": "/level" },
-  "on_change": { "action": "update_data", "path": "/level", "value": "${value}" }
-}
-```
-
-### 在表单中使用
+在表单中使用双滑块来筛选区间，并设置必填校验：
 
 ```json
 [
@@ -198,15 +123,7 @@
     "id": "filter-form",
     "component": "form",
     "submitButtonId": "submit-btn",
-    "children": ["name-input", "price-range-slider", "submit-btn"]
-  },
-  {
-    "id": "name-input",
-    "component": "input",
-    "placeholder": "请输入商品名称",
-    "value": { "path": "/name" },
-    "rules": [{ "required": true, "message": "请输入商品名称" }],
-    "on_change": { "action": "update_data", "path": "/name", "value": "${value}" }
+    "children": ["price-range-slider", "submit-btn"]
   },
   {
     "id": "price-range-slider",
@@ -215,38 +132,44 @@
     "max": 10000,
     "step": 100,
     "range": true,
-    "value": { "path": "/priceRange" },
-    "rules": [{ "required": true, "message": "请选择价格范围" }],
-    "on_change": { "action": "update_data", "path": "/priceRange", "value": "${value}" }
+    "value": {
+      "path": "/priceRange"
+    },
+    "rules": [
+      { "required": true, "message": "请选择价格范围" }
+    ]
   },
   {
     "id": "submit-btn",
     "component": "button",
     "label": "搜索",
     "on_tap": [
-      { "action": "http_proxy", "payload": { "http_config": { "method": "POST", "path": "/api/search" } } }
+      {
+        "action": "http_proxy",
+        "payload": {
+          "http_config": {
+            "method": "POST",
+            "path": "/api/search",
+            "body": { "price": "${$root.priceRange}" }
+          }
+        }
+      }
     ]
   }
 ]
 ```
 
-## slider vs 其他输入方式的对比
-
-| 组件 | 适用场景 | 特点 |
-|------|---------|------|
-| `slider` | 连续数值/范围 | 拖动选择、直观 |
-| `inputnumber` | 精确数值 | 精确输入、支持步进按钮 |
-| `radio` | 少量离散选项 | 选项明确、可显示描述 |
-| `select` | 枚举选择 | 节省空间、可多选 |
-
 ## 新手常见问题
 
-**Q: 单滑块和双滑块的值格式有什么区别？**
-- 单滑块：值为 number，如 `50`
-- 双滑块（`range: true`）：值为数组，如 `[20, 80]`
+**Q: 单滑块和双滑块（`range: true`）的数据格式有什么区别？**
+- 单滑块：数据为数字 (`number`)，例如 `50`。
+- 双滑块：数据为包含两个数字的数组 (`[number, number]`)，例如 `[20, 80]`。如果初始未赋值，引擎会默认初始化为 `[0, 0]`。
+
+**Q: 为什么我没有配置 `on_change`，但滑动时数据依然更新了？**
+- 只要配置了 `value.path`，组件引擎默认具有 fallback 机制，会自动执行 `{ action: 'update_data', path: '你的path', value: '当前值' }` 实现双向绑定。除非你需要在滑动时额外触发请求（如搜索），否则不需要显式编写 `on_change`。
 
 **Q: 如何设置双滑块的初始值？**
-- 在 `dataModel` 中设置数组：
+- 在页面的初始 `dataModel` 中为对应路径设置数组，或者由外部请求获取后写入：
 ```json
 {
   "dataModel": {
@@ -255,35 +178,8 @@
 }
 ```
 
-**Q: 滑块拖动时 `on_change` 每次都会触发吗？**
-- 是的，拖动过程中会持续触发 `on_change`。
-- 如果需要只在拖动结束时更新，可以考虑其他实现方式。
-
-**Q: `step` 设置过小会导致性能问题吗？**
-- 如果范围很大（如 0-10000）且 step 很小（如 1），可能会有性能影响。
-- 建议根据实际需求设置合理的 step 值。
-
-**Q: 如何让滑块显示刻度标记？**
-- 使用 `marks` 属性，如：
-```json
-{
-  "marks": {
-    "0": "0%",
-    "50": "50%",
-    "100": "100%"
-  }
-}
-```
-- marks 的 key 必须在 min-max 范围内。
+**Q: 文档里说 Ant Design 有 `marks` 刻度功能，FAUI 的 `slider` 支持吗？**
+- **不支持**。FAUI 的 `slider` 目前未透出 `marks` 属性，请勿在配置中臆想添加 `marks`。如果需要离散的几档选择，可以考虑使用 `radio` 或 `segmented`。
 
 **Q: 滑块可以垂直显示吗？**
-- 目前 `slider` 组件默认水平显示。
-- 如需垂直样式，可能需要通过 `style` 调整或使用其他组件。
-
-**Q: 如何禁用滑块（只读展示）？**
-- 目前 `slider` 组件暂不支持 `disabled` 属性。
-- 如果需要只读展示，可以考虑使用 `text` 组件配合数据显示。
-
-**Q: `rules` 校验对双滑块如何工作？**
-- 校验规则如 `min`、`max` 对双滑块的值数组同样生效。
-- 例如 `{ "min": 0 }` 会校验数组中的每个值都不小于 0。
+- 目前 `slider` 组件仅支持默认的水平显示，暂未透出 `vertical` 属性。

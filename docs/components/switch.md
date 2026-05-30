@@ -1,296 +1,139 @@
 # switch 组件
 
-`switch` 是开关组件，用于在两个互斥状态之间进行切换，适用于布尔值开关场景，如启用/禁用、开启/关闭等。
+`switch` 是一个开关组件，用于在两个互斥状态（通常是布尔值）之间进行切换。它表示一种即时生效的状态改变。
 
 ## 适用场景
 
-- 功能开关（如启用/禁用某个功能）
-- 状态切换（如在线/离线）
-- 订阅设置（如接收通知开/关）
-- 模式切换（如浅色/深色模式）
-- 任何需要布尔值切换的场景
-
-## 与 checkbox 的区别
-
-| 特性 | switch | checkbox |
-|------|--------|----------|
-| 交互方式 | 滑动切换 | 点击勾选 |
-| 语义 | 实时生效的状态切换 | 需要确认的选项 |
-| 视觉 | 开关样式 | 勾选框样式 |
-| 适用场景 | 设置项（立即生效） | 表单选项（提交生效） |
-
-**建议**：
-- 需要用户明确"勾选确认"的场景用 `checkbox`
-- 开关即生效的设置项用 `switch`
+- **设置项开关**：如通知推送开关、夜间模式切换等。
+- **状态启用/停用**：控制某个特定功能或业务模块的启停。
+- **表单选项**：在表单中作为必选/可选的布尔值提交项。
 
 ## 核心属性
 
-### checkedChildren（开启状态文本）
+| 属性名 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `checked` | `ValueBinding` | - | **推荐**。通过 `path` 双向绑定开关的布尔值状态 |
+| `value` | `ValueBinding` | - | 功能同 `checked`，也可用于状态绑定 |
+| `on_change` | `ActionConfig` | - | 状态改变时触发的动作。如果不配置但绑定了路径，引擎会自动回写状态。自定义时可通过 `${$value}` 引用最新值，组件会保留你设置的自定义 `value` 表达式不覆盖。 |
+| `checkedChildren` | `string` | - | 开启状态下显示的文本内容 |
+| `unCheckedChildren` | `string` | - | 关闭状态下显示的文本内容 |
+| `disabled` | `boolean` \| `string` | `false` | 是否禁用开关 |
+| `size` | `string` | `"default"` | 开关大小，可选 `"small"`、`"default"` |
+| `rules` | `FormRule[]` | - | 在 `form` 中使用时的表单校验规则 |
 
-开关打开时显示的文本：
+### checked.path / value.path（数据绑定）
 
-```json
-{
-  "id": "notification-switch",
-  "component": "switch",
-  "checkedChildren": "开"
-}
-```
-
-### unCheckedChildren（关闭状态文本）
-
-开关关闭时显示的文本：
-
-```json
-{
-  "id": "notification-switch",
-  "component": "switch",
-  "unCheckedChildren": "关"
-}
-```
-
-### value.path 或 checked.path（数据绑定）
-
-**推荐使用 `checked.path`**（布尔语义更清晰）：
+通过指定路径与全局状态进行双向绑定。在没有配置 `on_change` 的情况下，引擎会自动监听开关的切换并触发 `update_data` 回写对应路径的值。
 
 ```json
 {
-  "id": "status-switch",
+  "id": "theme-switch",
   "component": "switch",
-  "checked": { "path": "/isEnabled" }
+  "checked": { "path": "/settings/isDarkMode" }
 }
 ```
 
-**也可以使用 `value.path`**：
+### checkedChildren / unCheckedChildren（状态文本）
+
+在开关按钮内部显示对应状态的提示文本。支持通过插值表达式动态求值。
 
 ```json
 {
   "id": "status-switch",
   "component": "switch",
-  "value": { "path": "/isEnabled" }
+  "checkedChildren": "开启",
+  "unCheckedChildren": "关闭",
+  "checked": { "path": "/status/enabled" }
 }
 ```
 
-### on_change（值变化事件）
+### disabled 与 size
 
-**必须配置**：
+控制开关的禁用状态及尺寸大小。
 
 ```json
 {
-  "id": "status-switch",
+  "id": "disabled-switch",
   "component": "switch",
-  "checked": { "path": "/isEnabled" },
-  "on_change": { "action": "update_data", "path": "/isEnabled", "value": "${value}" }
+  "size": "small",
+  "disabled": "${/isSubmitting}",
+  "checked": { "path": "/settings/autoSave" }
 }
 ```
 
-`${value}` 在 switch 场景下是 `true`（开启）或 `false`（关闭）。
+## 在表单中使用 (rules)
 
-### rules（校验规则）
-
-配合 `required: true` 可以要求必须选择开启状态：
+当作为 `form` 的子组件时，可以使用 `rules` 配合 `required` 进行强校验。
+> **注意**：对于 `switch` 组件，`required: true` 意味着其值必须为真（即必须处于开启状态）。
 
 ```json
 {
   "id": "agreement-switch",
   "component": "switch",
-  "rules": [{ "required": true, "message": "请开启协议" }]
+  "checkedChildren": "已同意",
+  "unCheckedChildren": "未同意",
+  "checked": { "path": "/form/agreed" },
+  "rules": [
+    { "required": true, "message": "请先开启并同意协议" }
+  ]
 }
 ```
-
-注意：`required: true` 对 switch 意味着值必须是 `true`（开启状态），`false` 会触发校验失败。
 
 ## 完整示例
 
-### 基础开关
+组合多个开关形成设置面板：
 
 ```json
 {
-  "id": "status-switch",
-  "component": "switch",
-  "checked": { "path": "/isEnabled" },
-  "on_change": { "action": "update_data", "path": "/isEnabled", "value": "${value}" }
+  "id": "settings-panel",
+  "component": "box",
+  "layout": "vertical",
+  "spacing": 16,
+  "children": [
+    {
+      "id": "email-setting",
+      "component": "box",
+      "layout": "horizontal",
+      "justify": "space-between",
+      "children": [
+        { "id": "email-label", "component": "text", "content": "接收邮件通知" },
+        {
+          "id": "email-switch",
+          "component": "switch",
+          "checkedChildren": "ON",
+          "unCheckedChildren": "OFF",
+          "checked": { "path": "/settings/email" }
+        }
+      ]
+    },
+    {
+      "id": "sms-setting",
+      "component": "box",
+      "layout": "horizontal",
+      "justify": "space-between",
+      "children": [
+        { "id": "sms-label", "component": "text", "content": "接收短信通知" },
+        {
+          "id": "sms-switch",
+          "component": "switch",
+          "checkedChildren": "ON",
+          "unCheckedChildren": "OFF",
+          "checked": { "path": "/settings/sms" }
+        }
+      ]
+    }
+  ]
 }
-```
-
-### 带状态文字的开关
-
-```json
-{
-  "id": "notification-switch",
-  "component": "switch",
-  "checkedChildren": "接收通知",
-  "unCheckedChildren": "关闭通知",
-  "checked": { "path": "/notificationsEnabled" },
-  "on_change": { "action": "update_data", "path": "/notificationsEnabled", "value": "${value}" }
-}
-```
-
-### 必填开关（必须开启才能提交）
-
-```json
-{
-  "id": "agreement-switch",
-  "component": "switch",
-  "checkedChildren": "我已阅读并同意",
-  "unCheckedChildren": "未同意",
-  "checked": { "path": "/agreed" },
-  "rules": [{ "required": true, "message": "请先同意协议" }],
-  "on_change": { "action": "update_data", "path": "/agreed", "value": "${value}" }
-}
-```
-
-### 多个开关的设置面板
-
-```json
-[
-  {
-    "id": "settings-box",
-    "component": "box",
-    "layout": "vertical",
-    "spacing": 16,
-    "children": ["email-setting", "sms-setting", "push-setting"]
-  },
-  {
-    "id": "email-setting",
-    "component": "box",
-    "layout": "horizontal",
-    "justify": "space-between",
-    "align": "center",
-    "children": ["email-label", "email-switch"]
-  },
-  {
-    "id": "email-label",
-    "component": "text",
-    "content": "邮件通知"
-  },
-  {
-    "id": "email-switch",
-    "component": "switch",
-    "checkedChildren": "开",
-    "unCheckedChildren": "关",
-    "checked": { "path": "/emailEnabled" },
-    "on_change": { "action": "update_data", "path": "/emailEnabled", "value": "${value}" }
-  },
-  {
-    "id": "sms-setting",
-    "component": "box",
-    "layout": "horizontal",
-    "justify": "space-between",
-    "align": "center",
-    "children": ["sms-label", "sms-switch"]
-  },
-  {
-    "id": "sms-label",
-    "component": "text",
-    "content": "短信通知"
-  },
-  {
-    "id": "sms-switch",
-    "component": "switch",
-    "checkedChildren": "开",
-    "unCheckedChildren": "关",
-    "checked": { "path": "/smsEnabled" },
-    "on_change": { "action": "update_data", "path": "/smsEnabled", "value": "${value}" }
-  },
-  {
-    "id": "push-setting",
-    "component": "box",
-    "layout": "horizontal",
-    "justify": "space-between",
-    "align": "center",
-    "children": ["push-label", "push-switch"]
-  },
-  {
-    "id": "push-label",
-    "component": "text",
-    "content": "推送通知"
-  },
-  {
-    "id": "push-switch",
-    "component": "switch",
-    "checkedChildren": "开",
-    "unCheckedChildren": "关",
-    "checked": { "path": "/pushEnabled" },
-    "on_change": { "action": "update_data", "path": "/pushEnabled", "value": "${value}" }
-  }
-]
-```
-
-### 在表单中使用
-
-```json
-[
-  {
-    "id": "account-form",
-    "component": "form",
-    "submitButtonId": "submit-btn",
-    "children": ["username-input", "public-profile-switch", "submit-btn"]
-  },
-  {
-    "id": "username-input",
-    "component": "input",
-    "placeholder": "请输入用户名",
-    "value": { "path": "/username" },
-    "rules": [{ "required": true, "message": "请输入用户名" }],
-    "on_change": { "action": "update_data", "path": "/username", "value": "${value}" }
-  },
-  {
-    "id": "public-profile-switch",
-    "component": "switch",
-    "checkedChildren": "公开",
-    "unCheckedChildren": "私密",
-    "checked": { "path": "/isPublic" },
-    "on_change": { "action": "update_data", "path": "/isPublic", "value": "${value}" }
-  },
-  {
-    "id": "submit-btn",
-    "component": "button",
-    "label": "保存设置",
-    "on_tap": [
-      { "action": "http_proxy", "payload": { "http_config": { "method": "POST", "path": "/api/settings" } } }
-    ]
-  }
-]
 ```
 
 ## 新手常见问题
 
-**Q: 开关切换后值是 true/false 吗？**
-- 是的，开关切换时 `on_change` 中的 `${value}` 是布尔值 `true`（开启）或 `false`（关闭）。
+**Q: 为什么我切换开关，页面上的数据没有更新？**
+- 请检查是否配置了 `checked.path` 或 `value.path` 绑定全局状态。如果没有绑定路径，引擎不知道将新的布尔值写回何处，从而导致双向绑定失效。
 
-**Q: 初始状态是开启还是关闭？**
-- 取决于 `dataModel` 中对应字段的初始值：
-  - `true` → 初始为开启状态
-  - `false` 或 `undefined` → 初始为关闭状态
+**Q: 开关的默认状态怎么设置？**
+- 开关的状态完全由其绑定的 `dataModel` 中的数据决定。在初始的 `dataModel` 中给对应路径赋布尔值即可，如 `{"settings": {"email": true}}`。
 
-**Q: `checked.path` 和 `value.path` 有什么区别？**
-- `checked.path` 语义更明确，表示布尔值的开关状态。
-- `value.path` 也可以使用，但建议使用 `checked.path`。
-
-**Q: 想让开关默认开启？**
-- 在 `dataModel` 中设置：
-```json
-{
-  "dataModel": {
-    "isEnabled": true
-  }
-}
-```
-
-**Q: `checkedChildren` 和 `unCheckedChildren` 是必须配置的吗？**
-- 不是必须的，不配置时只显示开关本身。
-- 配置后会显示对应的文字描述。
-
-**Q: 开关切换时需要用户确认吗？**
-- `switch` 组件的切换是即时的，没有确认步骤。
-- 如果需要确认（如"确定要关闭吗？"），需要自行实现对话框逻辑。
-
-**Q: 为什么 `rules: [{ required: true }]` 要求必须开启？**
-- 因为 `required: true` 表示值不能为空或 falsy。
-- 对 switch 来说，`false` 是 falsy 值，所以未开启时会触发校验失败。
-- 如果希望可以不选（不开启也不关闭），去掉 `required` 规则。
-
-**Q: switch 可以禁用（不允许操作）吗？**
-- 目前 `switch` 组件暂不支持 `disabled` 属性。
-- 如果需要只读展示，可以配合 `visible` 条件渲染或用 `text` 展示状态。
+**Q: switch 和 checkbox 有什么区别，应该用哪个？**
+- `switch` 代表即时生效的状态切换，视觉上更适合“设置”、“控制选项”。
+- `checkbox` 往往用于表单中多项选择的场景，或者表示“选中/取消选中”的操作，通常配合提交按钮一起使用。

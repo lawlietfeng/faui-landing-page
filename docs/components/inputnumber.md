@@ -4,30 +4,39 @@
 
 ## 适用场景
 
-- 年龄输入
-- 商品数量
-- 价格/金额
-- 百分比/比例设置
-- 任何需要限制为数值的输入
+- **表单数据录入**：年龄、身高、体重等基本数值。
+- **电商与交易**：商品数量、价格、折扣比例等。
+- **范围限制**：需要限制用户只能在特定范围或精度内输入的场景。
 
 ## 核心属性
 
-### min / max（最小值/最大值）
+| 属性名 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `value.path` | `string` | - | 双向绑定的数据路径。如果存在，它将作为输入框的受控值。 |
+| `on_change` | `ActionConfig` | - | 数值改变时触发的动作。如果不配置但配置了 `value.path`，默认执行回写数据的 fallback 操作。自定义时可通过 `${$value}` 引用最新值，组件会保留你设置的自定义 `value` 表达式不覆盖。 |
+| `min` | `number` | - | 允许输入的最小值。 |
+| `max` | `number` | - | 允许输入的最大值。 |
+| `step` | `number` | `1` | 每次改变步数，可以为小数。 |
+| `placeholder` | `string` | - | 输入框为空时的提示文字，支持表达式插值。 |
+| `rules` | `FormRule[]` | - | 配合 `form` 校验的规则数组。 |
 
-限制输入的数值范围：
+### value.path 与 on_change（数据双向绑定）
+
+将数字输入框的值绑定到全局状态的某个字段。在数值变化时，如果没有配置 `on_change`，引擎会自动 fallback 将最新值（类型为 `number` 或 `null`）回写到 `dataModel`。
 
 ```json
 {
   "id": "age-input",
   "component": "inputnumber",
-  "min": 0,
-  "max": 150
+  "value": {
+    "path": "/userInfo/age"
+  }
 }
 ```
 
-### step（步进值）
+### min / max / step（范围与步进）
 
-点击加减按钮时每次变化的数值：
+限制输入的数值范围，以及点击加减按钮时每次变化的数值：
 
 ```json
 {
@@ -35,242 +44,62 @@
   "component": "inputnumber",
   "min": 0,
   "max": 10000,
-  "step": 100
+  "step": 0.5
 }
 ```
 
-设置为 `1` 则每次变化 1；设置为 `0.1` 则每次变化 0.1（支持小数）。
+### rules（校验规则）
 
-### placeholder（占位提示）
-
-```json
-{
-  "id": "quantity-input",
-  "component": "inputnumber",
-  "placeholder": "请输入数量"
-}
-```
-
-### value.path（数据绑定）
-
-```json
-{
-  "id": "quantity-input",
-  "component": "inputnumber",
-  "value": { "path": "/quantity" }
-}
-```
-
-### on_change（值变化事件）
-
-**必须配置**：
+配合表单组件，限制输入内容的合法性。
 
 ```json
 {
   "id": "quantity-input",
   "component": "inputnumber",
   "value": { "path": "/quantity" },
-  "on_change": { "action": "update_data", "path": "/quantity", "value": "${value}" }
-}
-```
-
-`${value}` 是当前输入的数值（number 类型）。
-
-### rules（校验规则）
-
-```json
-{
-  "id": "age-input",
-  "component": "inputnumber",
   "rules": [
-    { "required": true, "message": "请输入年龄" },
-    { "type": "number", "message": "年龄必须是数字" },
-    { "min": 18, "message": "必须年满 18 岁" }
+    { "required": true, "message": "请输入数量" },
+    { "type": "number", "message": "数量必须是数字" },
+    { "min": 1, "message": "至少购买 1 件" }
   ]
-}
-```
-
-### validateTrigger（触发校验时机）
-
-```json
-{
-  "id": "age-input",
-  "component": "inputnumber",
-  "validateTrigger": "onBlur"
 }
 ```
 
 ## 完整示例
 
-### 年龄输入
-
-```json
-{
-  "id": "age-input",
-  "component": "inputnumber",
-  "placeholder": "请输入年龄",
-  "min": 0,
-  "max": 150,
-  "step": 1,
-  "value": { "path": "/age" },
-  "rules": [
-    { "required": true, "message": "请输入年龄" },
-    { "type": "number", "message": "年龄必须是数字" },
-    { "min": 18, "message": "必须年满 18 岁" }
-  ],
-  "on_change": { "action": "update_data", "path": "/age", "value": "${value}" }
-}
-```
-
-### 商品数量
-
-```json
-{
-  "id": "quantity-input",
-  "component": "inputnumber",
-  "placeholder": "数量",
-  "min": 1,
-  "max": 99,
-  "step": 1,
-  "value": { "path": "/quantity" },
-  "rules": [
-    { "required": true, "message": "请输入数量" },
-    { "min": 1, "message": "数量最少为 1" }
-  ],
-  "on_change": { "action": "update_data", "path": "/quantity", "value": "${value}" }
-}
-```
-
-### 价格输入（支持小数）
-
-```json
-{
-  "id": "price-input",
-  "component": "inputnumber",
-  "placeholder": "请输入价格",
-  "min": 0,
-  "max": 999999.99,
-  "step": 0.01,
-  "precision": 2,
-  "value": { "path": "/price" },
-  "rules": [
-    { "required": true, "message": "请输入价格" },
-    { "min": 0.01, "message": "价格最小为 0.01" }
-  ],
-  "on_change": { "action": "update_data", "path": "/price", "value": "${value}" }
-}
-```
-
-### 百分比输入
+包含数据绑定、表单校验、数值限制和占位提示的完整配置：
 
 ```json
 {
   "id": "discount-input",
   "component": "inputnumber",
-  "placeholder": "折扣比例",
+  "placeholder": "请输入折扣（0-100）",
   "min": 0,
   "max": 100,
   "step": 5,
-  "addonAfter": "%",
-  "value": { "path": "/discount" },
+  "value": {
+    "path": "/discount"
+  },
   "rules": [
-    { "required": true, "message": "请输入折扣比例" },
-    { "min": 0, "max": 100, "message": "折扣比例必须在 0-100 之间" }
+    { "required": true, "message": "折扣不能为空" }
   ],
-  "on_change": { "action": "update_data", "path": "/discount", "value": "${value}" }
+  "style": {
+    "width": "100%",
+    "marginBottom": 16
+  }
 }
 ```
-
-### 在表单中使用
-
-```json
-[
-  {
-    "id": "product-form",
-    "component": "form",
-    "submitButtonId": "submit-btn",
-    "children": ["name-input", "price-input", "quantity-input", "submit-btn"]
-  },
-  {
-    "id": "name-input",
-    "component": "input",
-    "placeholder": "请输入商品名称",
-    "value": { "path": "/name" },
-    "rules": [{ "required": true, "message": "请输入商品名称" }],
-    "on_change": { "action": "update_data", "path": "/name", "value": "${value}" }
-  },
-  {
-    "id": "price-input",
-    "component": "inputnumber",
-    "placeholder": "请输入单价",
-    "min": 0,
-    "step": 0.01,
-    "precision": 2,
-    "value": { "path": "/price" },
-    "rules": [
-      { "required": true, "message": "请输入单价" },
-      { "min": 0.01, "message": "单价最小为 0.01" }
-    ],
-    "on_change": { "action": "update_data", "path": "/price", "value": "${value}" }
-  },
-  {
-    "id": "quantity-input",
-    "component": "inputnumber",
-    "placeholder": "请输入库存",
-    "min": 0,
-    "step": 1,
-    "value": { "path": "/stock" },
-    "rules": [
-      { "required": true, "message": "请输入库存" },
-      { "min": 0, "message": "库存不能为负数" }
-    ],
-    "on_change": { "action": "update_data", "path": "/stock", "value": "${value}" }
-  },
-  {
-    "id": "submit-btn",
-    "component": "button",
-    "label": "提交",
-    "on_tap": [
-      { "action": "http_proxy", "payload": { "http_config": { "method": "POST", "path": "/api/product" } } }
-    ]
-  }
-]
-```
-
-## 与 input 的区别
-
-| 特性 | input | inputnumber |
-|------|-------|-------------|
-| 输入类型 | 文本（字符串） | 数值（数字） |
-| 步进按钮 | 无 | 有（加减按钮） |
-| min/max 限制 | 无 | 有 |
-| 支持小数 | 是（但无法限制步进） | 是（可设置 step） |
-| 适用场景 | 任意文本 | 数值、金额、数量 |
 
 ## 新手常见问题
 
 **Q: 输入非数字会被拒绝吗？**
-- 是的，`inputnumber` 只接受数字输入，非数字字符无法输入。
+- 是的，`inputnumber` 组件会自动拦截非数字字符（除小数点和负号外）。
 
-**Q: 初始值显示不正确？**
-- 确认 `dataModel` 中对应字段的值是数字类型（number），而不是字符串。
-- 例如：`"age": "25"`（字符串）可能导致问题，应使用 `"age": 25`（数字）。
+**Q: 初始值显示不正确或者无法回写？**
+- 请确认 `dataModel` 中对应字段的值是数字类型（number），而不是字符串。例如 `"age": "25"` 可能导致表现异常，应使用 `"age": 25`。
 
-**Q: 如何设置小数精度？**
-- 使用 `precision` 属性可以限制小数位数，如 `precision: 2` 限制最多 2 位小数。
-
-**Q: step 设置为小数后，min 也要设置小数吗？**
-- 不一定，但如果业务需要精确控制，建议 min 也使用相同精度的小数。
-
-**Q: 值保存到 dataModel 后是字符串还是数字？**
-- `inputnumber` 的值是 number 类型（JavaScript 数字）。
-- 如果后端期望字符串，需要在 `httpRequest` 中进行转换。
-
-**Q: 如何在输入框后添加单位（如"元"、"%"、"件"）？**
-- 使用 `addonAfter` 属性可以添加后缀文本。
-- 例如：`"addonAfter": "元"` 会在输入框右侧显示"元"。
+**Q: 为什么提交到后端的数据变成了 null？**
+- 如果用户清空了输入框，组件会将其值更新为 `null`（而不是空字符串 `""`），请确保后端能够处理或在发起请求前进行默认值转换。
 
 **Q: 超过 min/max 范围时会发生什么？**
-- 到达最小值后，减号按钮会自动禁用。
-- 到达最大值后，加号按钮会自动禁用。
-- 手动输入超出范围的值仍然可以，但会触发校验失败。
+- 到达最小值后，减号按钮会自动禁用；到达最大值后，加号按钮会自动禁用。如果用户手动输入超出范围的值，输入框在失焦后会自动修正为边界值。

@@ -1,82 +1,55 @@
-# form 组件
+# form 表单组件
 
-`form` 是表单容器组件，负责管理表单内所有字段的校验和提交逻辑。
+`form` 是表单的顶层容器组件，它在底层通过 React Context 拦截并管理内部所有输入控件（如 Input、Select、Checkbox 等）的校验状态和提交逻辑。
 
-## 核心作用
+## 适用场景
 
-当页面需要"用户输入 + 提交校验"时，使用 `form` 组件可以实现：
-
-1. **统一校验**：在用户提交前，对所有字段执行全量校验
-2. **阻断提交**：如果任意字段校验失败，阻止提交动作执行
-3. **错误提示**：在对应字段下方显示校验错误信息
+- **数据录入**：包含多个输入项的用户注册、订单填写、配置修改页面。
+- **校验拦截**：在用户点击提交按钮发送网络请求之前，强制进行前置校验（如必填项检查、格式校验），阻断无效数据的提交。
 
 ## 核心属性
 
-### submitButtonId（提交按钮 ID）
+| 属性名 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `submitButtonId` | `string` | - | **必填**。指定触发当前表单校验的提交按钮的组件 ID |
+| `children` | `string[]` | `[]` | 表单内的所有字段组件和提交按钮的 ID 数组 |
+| `layout` | `string` | `horizontal` | 表单项布局方式，可选 `horizontal`（水平，左标签右输入）或 `vertical`（垂直，上标签下输入） |
 
-指定哪个按钮是表单的提交按钮。这个按钮的 `id` 必须与 `submitButtonId` 的值一致：
+> **注意**：`form` 本身不直接包含具体的数据源属性，它是通过子组件的 `value`（双向绑定）和 `rules` 来协同工作的。
+
+### submitButtonId（提交按钮关联）
+
+`form` 组件的核心机制之一。你必须指定一个按钮组件的 `id` 作为 `submitButtonId`。当用户点击该按钮时，`form` 组件会拦截该按钮原有的 `on_tap` 动作，转而先对所有 `children` 中的表单控件执行校验。
+只有所有校验全部通过，`form` 才会放行，让该按钮的 `on_tap` 动作序列继续执行。
 
 ```json
 {
-  "id": "user-form",
+  "id": "login-form",
   "component": "form",
-  "submitButtonId": "submit-btn",
-  "children": ["name-input", "email-input", "submit-btn"]
+  "submitButtonId": "btn-login",
+  "children": ["input-username", "input-password", "btn-login"]
 }
 ```
 
-```json
-{
-  "id": "submit-btn",
-  "component": "button",
-  "label": "提交"
-}
-```
+## 工作机制与校验流程
 
-### children（表单内容）
+### 1. 拦截与执行流程
 
-`children` 数组包含表单内的所有字段组件和提交按钮。组件按数组顺序渲染：
-
-```json
-{
-  "id": "user-form",
-  "component": "form",
-  "submitButtonId": "submit-btn",
-  "children": [
-    "name-input",
-    "email-input",
-    "type-select",
-    "remark-input",
-    "submit-btn"
-  ]
-}
-```
-
-## 工作机制
-
-### 校验流程
-
-```
-用户点击提交按钮
+```text
+用户点击提交按钮 (submitButtonId)
        │
        ▼
 ┌─────────────────┐
-│ form 拦截请求    │
+│ form 拦截该点击事件 │
 └─────────────────┘
        │
        ▼
 ┌─────────────────┐
 │ 遍历 children   │
-│ 中所有字段       │
+│ 执行所有元素的 rules │
 └─────────────────┘
        │
-       ▼
-┌─────────────────┐
-│ 执行字段 rules   │
-│ 校验            │
-└─────────────────┘
-       │
-       ├── 有字段校验失败 ──→ 显示错误提示，阻断提交
+       ├── 有任意字段校验失败 ──→ 在失败字段下方显示错误提示，并【阻断】提交动作
        │
        ▼
 ┌─────────────────┐
@@ -85,175 +58,87 @@
        │
        ▼
 ┌─────────────────┐
-│ 执行按钮的      │
-│ on_tap 动作      │
+│ 正常执行提交按钮的 │
+│ on_tap 动作序列    │
 └─────────────────┘
 ```
 
-### 校验触发时机
+### 2. 字段组件的校验配置 (Rules)
 
-| 时机 | 说明 |
-|------|------|
-| 点击提交按钮 | 提交前对所有字段全量校验 |
-| 字段 `validateTrigger: "onChange"` | 输入内容变化时触发该字段校验 |
-| 字段 `validateTrigger: "onBlur"` | 输入框失去焦点时触发该字段校验 |
+表单的校验规则并不是写在 `form` 容器上的，而是**写在具体的输入控件上**（如 `input` 组件的 `rules` 属性）。
 
-### 校验失败时的表现
+常见的 Rule 规则如下：
 
-- 字段输入框下方显示红色错误提示（`rules[].message`）
-- 提交按钮的 `on_tap` 动作**不会执行**
-- 只有修正错误后再次点击提交，才会执行后续动作
+| 规则字段 | 类型 | 说明 | 示例 |
+|------|------|------|------|
+| `required` | `boolean` | 是否必填 | `{ "required": true }` |
+| `message` | `string` | 校验失败时展示给用户的提示文案 | `{ "message": "邮箱不能为空" }` |
+| `pattern` | `string` | 正则表达式匹配 | `{ "pattern": "^\\d{11}$", "message": "必须为11位数字" }` |
+| `min` / `max` | `number` | 字符串的最小/最大长度，或数字的边界 | `{ "min": 6, "max": 20 }` |
 
 ## 完整示例
 
-### 基础表单
+这是一个标准的登录表单示例，包含了水平布局、双向数据绑定、必填项校验和正则校验。只有当用户名和密码格式都正确时，才会触发 `http_proxy` 动作进行登录。
 
 ```json
 [
   {
-    "id": "user-form",
+    "id": "login-form",
     "component": "form",
-    "submitButtonId": "submit-btn",
-    "children": ["name-input", "email-input", "submit-btn"]
+    "submitButtonId": "btn-login",
+    "layout": "vertical",
+    "children": [
+      "input-username",
+      "input-password",
+      "btn-login"
+    ]
   },
   {
-    "id": "name-input",
+    "id": "input-username",
     "component": "input",
-    "placeholder": "请输入姓名",
-    "value": { "path": "/name" },
+    "label": "用户名",
+    "placeholder": "请输入手机号或邮箱",
+    "value": { "path": "/login/username" },
     "rules": [
-      { "required": true, "message": "请输入姓名" },
-      { "min": 2, "message": "姓名至少 2 个字符" }
-    ],
-    "on_change": { "action": "update_data", "path": "/name", "value": "${value}" }
+      { "required": true, "message": "用户名不能为空" }
+    ]
   },
   {
-    "id": "email-input",
+    "id": "input-password",
     "component": "input",
-    "placeholder": "请输入邮箱",
-    "value": { "path": "/email" },
+    "label": "密码",
+    "placeholder": "请输入密码（至少6位）",
+    "type": "password",
+    "value": { "path": "/login/password" },
     "rules": [
-      { "required": true, "message": "请输入邮箱" },
-      { "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$", "message": "邮箱格式不正确" }
-    ],
-    "on_change": { "action": "update_data", "path": "/email", "value": "${value}" }
+      { "required": true, "message": "密码不能为空" },
+      { "min": 6, "message": "密码长度不能少于6位" }
+    ]
   },
   {
-    "id": "submit-btn",
+    "id": "btn-login",
     "component": "button",
-    "label": "提交",
+    "content": "登录",
+    "type": "primary",
     "on_tap": [
       {
         "action": "http_proxy",
         "payload": {
           "http_config": {
             "method": "POST",
-            "path": "/api/user/submit"
+            "path": "/api/v1/login"
           },
           "http_body": {
-            "name": { "path": "/name" },
-            "email": { "path": "/email" }
+            "username": "${/login/username}",
+            "password": "${/login/password}"
           }
         }
-      }
-    ]
-  }
-]
-```
-
-### 完整申请表单
-
-```json
-[
-  {
-    "id": "leave-form",
-    "component": "form",
-    "submitButtonId": "submit-btn",
-    "children": ["title-input", "type-select", "date-range-box", "reason-input", "agree-checkbox", "submit-btn"]
-  },
-  {
-    "id": "title-input",
-    "component": "input",
-    "placeholder": "请输入申请标题",
-    "value": { "path": "/title" },
-    "rules": [{ "required": true, "message": "请输入标题" }],
-    "on_change": { "action": "update_data", "path": "/title", "value": "${value}" }
-  },
-  {
-    "id": "type-select",
-    "component": "select",
-    "placeholder": "请选择请假类型",
-    "value": { "path": "/leaveType" },
-    "options": [
-      { "label": "事假", "value": "personal" },
-      { "label": "病假", "value": "sick" },
-      { "label": "年假", "value": "annual" }
-    ],
-    "rules": [{ "required": true, "message": "请选择请假类型" }],
-    "on_change": { "action": "update_data", "path": "/leaveType", "value": "${value}" }
-  },
-  {
-    "id": "date-range-box",
-    "component": "box",
-    "layout": "horizontal",
-    "spacing": 12,
-    "children": ["start-date", "end-date"]
-  },
-  {
-    "id": "start-date",
-    "component": "datepicker",
-    "placeholder": "开始日期",
-    "value": { "path": "/startDate" },
-    "rules": [{ "required": true, "message": "请选择开始日期" }],
-    "on_change": { "action": "update_data", "path": "/startDate", "value": "${value}" }
-  },
-  {
-    "id": "end-date",
-    "component": "datepicker",
-    "placeholder": "结束日期",
-    "value": { "path": "/endDate" },
-    "rules": [{ "required": true, "message": "请选择结束日期" }],
-    "on_change": { "action": "update_data", "path": "/endDate", "value": "${value}" }
-  },
-  {
-    "id": "reason-input",
-    "component": "textarea",
-    "placeholder": "请输入请假原因",
-    "rows": 4,
-    "value": { "path": "/reason" },
-    "rules": [
-      { "required": true, "message": "请输入请假原因" },
-      { "min": 10, "message": "原因至少 10 个字符" }
-    ],
-    "on_change": { "action": "update_data", "path": "/reason", "value": "${value}" }
-  },
-  {
-    "id": "agree-checkbox",
-    "component": "checkbox",
-    "checked": { "path": "/agreed" },
-    "label": "我确认以上信息真实有效",
-    "rules": [{ "required": true, "message": "请勾选确认" }],
-    "on_change": { "action": "update_data", "path": "/agreed", "value": "${value}" }
-  },
-  {
-    "id": "submit-btn",
-    "component": "button",
-    "label": "提交申请",
-    "on_tap": [
+      },
       {
-        "action": "http_proxy",
+        "action": "message",
         "payload": {
-          "http_config": {
-            "method": "POST",
-            "path": "/api/leave/submit"
-          },
-          "http_body": {
-            "title": { "path": "/title" },
-            "leaveType": { "path": "/leaveType" },
-            "startDate": { "path": "/startDate" },
-            "endDate": { "path": "/endDate" },
-            "reason": { "path": "/reason" }
-          }
+          "type": "success",
+          "content": "登录成功！"
         }
       }
     ]
@@ -263,58 +148,15 @@
 
 ## 新手常见问题
 
-**Q: 点击提交按钮没有反应？**
-- 检查 `form` 的 `submitButtonId` 是否与按钮的 `id` 完全一致。
-- 检查是否有字段校验失败（错误提示会显示在字段下方）。
+**Q: 为什么我点击了提交按钮，但是既没有发请求，也没有报错提示？**
+- 最常见的原因是 `submitButtonId` 配置错误。请确保 `form` 组件上的 `submitButtonId` 与你要点击的 `button` 组件的 `id` **完全一致**。如果拼写错误，`form` 无法拦截按钮，校验机制就不会生效。
 
-**Q: 字段没有校验？**
-- 确认 `rules` 写在**字段组件**上（如 `input`、`select`），而不是 `form` 上。
-- 确认字段在 `form` 的 `children` 数组中。
+**Q: 为什么我输入了错误的数据，表单也没有进行校验拦截？**
+- 检查 `rules` 是否写在了**输入控件组件**（如 `input`、`select`）上，而不是错误地写在了 `form` 组件上。
+- 检查输入控件是否已经被正确添加到了 `form` 的 `children` 数组中。如果控件不在 `children` 树里，`form` 就无法感知并校验它。
 
-**Q: 提交时校验通过了，但还是没发送请求？**
-- 检查 `http_proxy` 的 `http_config.path` 是否正确。
-- 检查 `httpRequest` 函数是否正确配置在 `Renderer` 上。
+**Q: 校验失败时，怎么获取到失败的原因并做弹窗提示？**
+- FAUI 引擎内置了表单拦截机制，当校验失败时，引擎会自动在对应的输入框下方渲染出红色字体的 `message` 错误提示，并默默阻断 `on_tap` 执行。开发者不需要手动去获取错误信息弹窗。
 
-**Q: 提交成功后想显示成功提示？**
-- 可以在 `on_tap` 的动作链末尾添加 `update_data` 更新成功状态。
-- 然后配合 `text` 组件的 `visible` 显示成功/失败提示。
-
-**Q: 一个页面有多个表单？**
-- 可以创建多个独立的 `form` 组件，每个 form 有自己的 `submitButtonId`。
-- 注意每个 form 的 `submitButtonId` 要唯一。
-
-**Q: 想在表单外部放置提交按钮？**
-- 可以，但按钮需要通过其他方式触发校验。
-- 建议将提交按钮放在 `form` 的 `children` 中，更符合预期行为。
-
-**Q: 表单提交后如何清除数据？**
-- 可以在 `on_tap` 的 `http_proxy` 成功后，添加一个 `update_data` 动作将字段重置为空值。
-
-## rules 校验规则完整说明
-
-| 规则 | 类型 | 说明 | 示例 |
-|------|------|------|------|
-| `required` | `boolean` | 是否必填 | `{ "required": true }` |
-| `message` | `string` | 失败时的提示 | `{ "message": "不能为空" }` |
-| `type` | `string` | 值类型 | `{ "type": "email" }` |
-| `min` | `number` | 最小值/最小长度 | `{ "min": 2 }` |
-| `max` | `number` | 最大值/最大长度 | `{ "max": 50 }` |
-| `pattern` | `string` | 正则表达式 | `{ "pattern": "^\\d+$" }` |
-| `enum` | `array` | 允许的值列表 | `{ "enum": ["A", "B"] }` |
-| `whitespace` | `boolean` | 允许纯空白 | `{ "whitespace": false }` |
-
-**常用组合示例**：
-
-```json
-// 必填 + 最小长度
-{ "required": true, "message": "请输入", "min": 2 }
-
-// 必填 + 邮箱格式
-{ "required": true, "message": "请输入邮箱", "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$" }
-
-// 最大长度
-{ "max": 200, "message": "内容不能超过 200 字" }
-
-// 枚举值
-{ "enum": ["pending", "approved", "rejected"], "message": "状态值无效" }
-```
+**Q: 想在表单外部放置提交按钮可以吗？**
+- **强烈不建议**。为了保证 `form` Context 能够正确收集到所有的字段和按钮引用，提交按钮必须作为子节点存在于 `form` 的 `children` 树中（直接子节点或深层嵌套子节点均可）。放在 `form` 外部会导致 `submitButtonId` 关联失效。

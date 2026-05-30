@@ -1,262 +1,168 @@
 # rate 组件
 
-`rate` 是评分组件，用于提供星级评分体验，适用于服务质量评分、产品满意度、等级评定等场景。
+`rate`（评分）组件用于提供直观的星级评分体验。适用于服务质量评分、产品满意度、技能等级评定等场景。
 
 ## 适用场景
 
-- 商品/服务满意度评分
-- 星级评价（如酒店、餐厅评价）
-- 等级评定（如技能等级、信誉等级）
-- 任何需要用户给出等级评价的场景
+- **用户评价**：商品/服务满意度评分、星级评价（如酒店、餐厅、司机评价）。
+- **等级展示**：展示某项事物的推荐指数、信誉等级或技能熟练度。
+- **表单收集**：作为表单的一部分，收集用户对某一维度的量化评价。
 
 ## 核心属性
 
+| 属性名 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `value` | `ValueBinding` | - | 双向绑定的数据路径，用于回显和写入当前的评分数值 |
+| `count` | `number \| string` | `5` | 设置评分的星星总数，支持插值表达式 |
+| `allowHalf` | `boolean \| string` | `false` | 是否允许半星评分，支持插值表达式 |
+| `on_change` | `ActionConfig` | - | 评分发生变化时的回调动作。自定义时可通过 `${$value}` 引用最新值，组件会保留你设置的自定义 `value` 表达式不覆盖。 |
+| `rules` | `FormRule[]` | - | 表单校验规则，支持必填、最大/最小值等校验 |
+| `validateTrigger` | `string \| string[]` | `'onChange'` | 触发校验的时机 |
+
 ### count（星星总数）
 
-设置评分的星星数量，默认为 5：
+默认显示 5 颗星星。你可以通过修改 `count` 来支持 10 星制或其他自定义数量的评分。
 
 ```json
 {
-  "id": "rating-rate",
   "component": "rate",
-  "count": 5
+  "id": "rate-count",
+  "count": 10
 }
 ```
 
-### allowHalf（是否允许半星）
+### allowHalf（半星评分）
 
-设置为 `true` 可以支持半颗星评分：
+设置为 `true` 时，用户可以点击星星的左半边，给出诸如 `2.5`、`3.5` 的分数。
 
 ```json
 {
-  "id": "rating-rate",
   "component": "rate",
+  "id": "rate-half",
   "allowHalf": true
 }
 ```
 
-- `true`：可以评 1、1.5、2、2.5... 星
-- `false`（默认）：只能评整数星
+### value & 双向绑定机制
 
-### value.path（数据绑定）
+`rate` 也是一个标准的受控表单组件。配置 `value.path` 即可实现双向绑定。
+
+**自动回写**：当用户点击改变评分时，如果没有显式配置 `on_change` 动作，引擎会自动触发 `update_data` 将最新的数值（如 `3` 或 `4.5`）回写到 `value.path` 路径下。
 
 ```json
 {
-  "id": "rating-rate",
   "component": "rate",
-  "value": { "path": "/rating" }
+  "id": "rate-binding",
+  "value": {
+    "path": "/form/serviceRating"
+  },
+  "allowHalf": true
 }
 ```
 
-### on_change（值变化事件）
+### rules（表单校验）
 
-**必须配置**：
+配合 `form` 组件时，你可以限制用户的评分范围（如必须大于等于 1 星，不能评 0 星）。
 
 ```json
 {
-  "id": "rating-rate",
   "component": "rate",
-  "value": { "path": "/rating" },
-  "on_change": { "action": "update_data", "path": "/rating", "value": "${value}" }
+  "id": "rate-rules",
+  "value": {
+    "path": "/form/productRating"
+  },
+  "rules": [
+    {
+      "required": true,
+      "message": "请务必给出您的评分"
+    },
+    {
+      "min": 1,
+      "message": "评分至少为 1 星"
+    }
+  ]
 }
 ```
 
-`${value}` 是当前评分的数值（number 类型）。
+## 高级用法：只读展示与动态交互
 
-### rules（校验规则）
+### 纯展示用途
 
-```json
-{
-  "id": "rating-rate",
-  "component": "rate",
-  "rules": [{ "required": true, "message": "请进行评分" }]
-}
-```
+如果只希望展示已有的评分结果而不允许用户修改（或者修改了也不保存），可以仅绑定 `value.path` 并利用表达式禁用它，或者通过外层增加透明遮罩阻止点击。虽然组件本身没有暴露出 `disabled` 属性，但你可以通过不处理回写（且不触发其他动作）来充当一个展示器。
 
-### validateTrigger（触发校验时机）
+### 带提示文字的联动
+
+评分组件本身不直接包含文字提示，但你可以结合插值表达式和 `text` 组件，在评分旁边动态显示诸如“极好”、“一般”、“较差”的文字。
 
 ```json
-{
-  "id": "rating-rate",
-  "component": "rate",
-  "validateTrigger": "onChange"
-}
+[
+  {
+    "component": "box",
+    "id": "rate-wrapper",
+    "layout": "horizontal",
+    "align": "center",
+    "spacing": 12,
+    "children": ["rate-action", "rate-text"]
+  },
+  {
+    "component": "rate",
+    "id": "rate-action",
+    "value": {
+      "path": "/feedback/score"
+    }
+  },
+  {
+    "component": "text",
+    "id": "rate-text",
+    "content": "${$root.feedback.score >= 4 ? '非常满意' : ($root.feedback.score >= 3 ? '一般' : '需要改进')}"
+  }
+]
 ```
 
 ## 完整示例
 
-### 基础评分（5星制）
+这是一个包含半星、校验规则以及动作拦截的完整示例：
 
 ```json
 {
-  "id": "rating-rate",
   "component": "rate",
-  "value": { "path": "/rating" },
-  "rules": [{ "required": true, "message": "请选择评分" }],
-  "on_change": { "action": "update_data", "path": "/rating", "value": "${value}" }
-}
-```
-
-### 允许半星的评分
-
-```json
-{
-  "id": "rating-rate",
-  "component": "rate",
-  "allowHalf": true,
+  "id": "rate-complex",
   "count": 5,
-  "value": { "path": "/rating" },
+  "allowHalf": true,
+  "value": {
+    "path": "/survey/driverScore"
+  },
   "rules": [
-    { "required": true, "message": "请进行评分" },
-    { "min": 1, "message": "评分至少 1 星" }
+    {
+      "required": true,
+      "message": "请为司机打分"
+    }
   ],
-  "on_change": { "action": "update_data", "path": "/rating", "value": "${value}" }
+  "on_change": [
+    {
+      "action": "update_data",
+      "path": "/survey/driverScore",
+      "value": "${value}"
+    },
+    {
+      "action": "message",
+      "payload": {
+        "type": "info",
+        "content": "您给出了 ${value} 星评价"
+      }
+    }
+  ]
 }
 ```
-
-### 10星制评分
-
-```json
-{
-  "id": "level-rate",
-  "component": "rate",
-  "count": 10,
-  "value": { "path": "/level" },
-  "rules": [
-    { "required": true, "message": "请选择等级" },
-    { "min": 1, "message": "等级至少为 1" }
-  ],
-  "on_change": { "action": "update_data", "path": "/level", "value": "${value}" }
-}
-```
-
-### 带提示文字的评分
-
-评分组件本身不直接支持提示文字，但可以配合 `text` 组件展示：
-
-```json
-[
-  {
-    "id": "rating-section",
-    "component": "box",
-    "layout": "vertical",
-    "spacing": 8,
-    "children": ["rating-label", "rating-rate", "rating-hint"]
-  },
-  {
-    "id": "rating-label",
-    "component": "text",
-    "content": "请为本次服务评分"
-  },
-  {
-    "id": "rating-rate",
-    "component": "rate",
-    "allowHalf": true,
-    "value": { "path": "/serviceRating" },
-    "on_change": { "action": "update_data", "path": "/serviceRating", "value": "${value}" }
-  },
-  {
-    "id": "rating-hint",
-    "component": "text",
-    "content": "${$root.serviceRating >= 4 ? '感谢您的满意！' : $root.serviceRating >= 2 ? '我们会继续改进' : '抱歉给您带来不好的体验'}"
-  }
-]
-```
-
-### 在表单中使用
-
-```json
-[
-  {
-    "id": "review-form",
-    "component": "form",
-    "submitButtonId": "submit-btn",
-    "children": ["title-input", "rating-rate", "comment-input", "submit-btn"]
-  },
-  {
-    "id": "title-input",
-    "component": "input",
-    "placeholder": "请输入评价标题",
-    "value": { "path": "/title" },
-    "rules": [{ "required": true, "message": "请输入标题" }],
-    "on_change": { "action": "update_data", "path": "/title", "value": "${value}" }
-  },
-  {
-    "id": "rating-rate",
-    "component": "rate",
-    "allowHalf": true,
-    "count": 5,
-    "value": { "path": "/rating" },
-    "rules": [{ "required": true, "message": "请选择评分" }],
-    "on_change": { "action": "update_data", "path": "/rating", "value": "${value}" }
-  },
-  {
-    "id": "comment-input",
-    "component": "textarea",
-    "placeholder": "请输入详细评价",
-    "rows": 4,
-    "value": { "path": "/comment" },
-    "rules": [
-      { "required": true, "message": "请输入评价内容" },
-      { "min": 10, "message": "评价内容至少 10 个字" }
-    ],
-    "on_change": { "action": "update_data", "path": "/comment", "value": "${value}" }
-  },
-  {
-    "id": "submit-btn",
-    "component": "button",
-    "label": "提交评价",
-    "on_tap": [
-      { "action": "http_proxy", "payload": { "http_config": { "method": "POST", "path": "/api/review" } } }
-    ]
-  }
-]
-```
-
-## 与其他评分方式的对比
-
-| 组件 | 适用场景 | 特点 |
-|------|---------|------|
-| `rate` | 星级评分 | 直观、可半星 |
-| `radio` | 等级选择 | 选项明确（1-5 文字描述） |
-| `slider` | 连续数值 | 可拖动、范围选择 |
-| `select` | 固定选项 | 选项可定制 |
 
 ## 新手常见问题
 
-**Q: 评分后值是什么类型？**
-- 评分的值是 number 类型，如 `1`、`2.5`、`5`。
+**Q: 旧文档里说 `on_change` 必须配置才能回写？**
+- 现已修复。与 `input`、`radio` 等表单组件一样，只要配置了 `value.path` 且未配置 `on_change`，引擎会自动执行 `update_data` 回写。
 
-**Q: 默认显示几颗星？**
-- 初始值取决于 `dataModel` 中对应字段的值。
-- 如果未设置或为 `0`，则不显示任何选中状态。
+**Q: 评分的初始值和最小值是什么？**
+- 默认初始值取决于 `dataModel` 中对应路径的值。如果未设置或值为 `0`，则不显示任何高亮的星星。
+- 默认情况下用户可以通过再次点击已选中的星星来取消评分（将其重置为 `0`）。如果业务要求必须评分，请使用 `rules` 中的 `min: 1` 校验拦截。
 
-**Q: 如何设置初始值为满分？**
-- 在 `dataModel` 中设置：
-```json
-{
-  "dataModel": {
-    "rating": 5
-  }
-}
-```
-
-**Q: 半星是如何显示的？**
-- 当 `allowHalf: true` 时，用户可以点击星星的左半边选择半星。
-- 视觉上会显示半个填充的星星。
-
-**Q: 可以自定义星星的样式吗？**
-- 可以通过 `style` 覆盖星星的颜色等样式。
-- 如需自定义星星图标（如用 ❤️ 代替 ★），可能需要查看是否支持 `character` 属性。
-
-**Q: 如何在后端处理评分的聚合计算？**
-- 每个评分提交后是数值，可以直接存储。
-- 聚合计算（如平均分）在后端或前端均可进行。
-
-**Q: 评分组件可以只读展示吗？**
-- 可以，将 `value.path` 绑定到一个有值的字段，但不配置 `on_change`。
-- 但用户仍可以点击改变值（只是不保存），如需真正只读，可能需要其他方式。
-
-**Q: 评分的最小值是 0 还是 1？**
-- 默认最小值是 0（不选择）。
-- 如果 `required: true`，用户必须选择至少 1 星才能提交。
+**Q: 我可以自定义星星的图标吗？比如用爱心代替星星。**
+- 当前 FAUI 基础封装的 `rate` 尚未透出 Ant Design 的 `character` 属性，因此暂不支持直接替换图标形状。可以通过全局 CSS 或等待后续引擎升级支持。

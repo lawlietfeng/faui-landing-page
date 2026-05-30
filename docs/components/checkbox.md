@@ -1,191 +1,117 @@
 # checkbox 组件
 
-`checkbox` 是复选框组件，适用于布尔值开关或多项选择的场景。
+`checkbox` 多选框组件用于在一组可选项中进行多项选择，或者作为一个单独的勾选开关（如“同意用户协议”）。它支持表单校验，并根据是否配置 `options` 自动切换为单选模式或复选框组模式。
 
 ## 适用场景
 
-- 是否同意、是否订阅、是否加急
-- 布尔值开关（开/关）
-- 表单中的协议确认
-- 需要用户明确勾选才能继续的场景
+- **独立开关勾选**：同意协议、记住密码等单一布尔值的勾选。
+- **批量多选**：在一组独立或相关的选项中（如爱好、标签）进行多项选择。
 
 ## 核心属性
 
-### label（复选框旁边的说明文字）
+### 属性总览
+
+| 属性名         | 类型                                                        | 默认值  | 说明                                                              |
+| -------------- | ----------------------------------------------------------- | ------- | ----------------------------------------------------------------- |
+| `value.path`   | `string`                                                    | -       | 双向绑定的数据路径。单选时值为布尔值，多选组时值为字符串/数字数组。 |
+| `checked.path` | `string`                                                    | -       | 同 `value.path`，向后兼容的别名属性。                             |
+| `label`        | `string` (支持表达式)                                       | -       | 单个 checkbox 的展示文本（仅在单选模式生效）。                      |
+| `options`      | `Array` (支持表达式)                                        | -       | 决定是否为多选组。包含 `label` 和 `value` 的数组。                  |
+| `field`        | `string`                                                    | -       | 表单字段名。                                                      |
+| `rules`        | `FormRule[]`                                                | -       | 表单校验规则（如必选）。                                          |
+| `on_change`    | `Action`                                                    | -       | 选中状态改变时的回调。默认会自动回写。自定义时可通过 `${$value}` 引用最新值，组件会保留你设置的自定义 `value` 表达式不覆盖。 |
+
+---
+
+### value.path / checked.path（数据绑定）
+
+绑定勾选状态。这里有两种模式：
+1. **单一模式**（不传 `options`）：绑定的值为 `boolean` (`true` / `false`)。
+2. **多选组模式**（传入 `options` 数组）：绑定的值为选中的 `value` 组成的数组（如 `["apple", "banana"]`）。
 
 ```json
 {
-  "id": "agree-check",
+  "id": "agree_checkbox",
   "component": "checkbox",
-  "label": "我已阅读并同意《用户协议》"
+  "label": "我已阅读并同意用户协议",
+  "value": {
+    "path": "/form/isAgreed"
+  }
 }
 ```
 
-### checked.path（推荐）vs value.path
+### options（多选组配置）
 
-checkbox 支持两种绑定方式：
+当配置了 `options` 时，组件将渲染为 `Checkbox.Group`。支持使用 `useExpression` 从全局动态获取选项数据。
 
-**推荐使用 `checked.path`**（布尔语义更清晰）：
+| 字段    | 类型     | 说明                   |
+| ------- | -------- | ---------------------- |
+| `value` | `string` | 选项的值，也是存入数组的值 |
+| `label` | `string` | 界面上展示的文字       |
 
 ```json
 {
-  "id": "subscribe-check",
+  "id": "hobbies_checkbox_group",
   "component": "checkbox",
-  "checked": { "path": "/subscribed" },
-  "label": "订阅最新资讯"
+  "options": [
+    { "label": "阅读", "value": "reading" },
+    { "label": "运动", "value": "sports" },
+    { "label": "音乐", "value": "music" }
+  ],
+  "value": {
+    "path": "/form/hobbies"
+  }
 }
 ```
+*提示：也可以写为 `"options": "${data.hobbiesDict}"`*
 
-**也可以使用 `value.path`**（与其他组件保持一致的写法）：
+### rules（表单校验）
+
+结合 Form 组件使用时，可以配置校验规则。例如对于“同意协议”通常要求必须为 `true`。
 
 ```json
 {
-  "id": "subscribe-check",
+  "id": "protocol_check",
   "component": "checkbox",
-  "value": { "path": "/subscribed" },
-  "label": "订阅最新资讯"
+  "label": "同意协议",
+  "rules": [
+    { "required": true, "message": "必须同意协议才能继续" }
+  ]
 }
 ```
-
-两者的区别：`checked.path` 期望值为 `true/false`，`value.path` 也可以接受其他值但语义不如 `checked.path` 清晰。
-
-### on_change（值变化事件）
-
-**必须配置**：
-
-```json
-{
-  "id": "agree-check",
-  "component": "checkbox",
-  "checked": { "path": "/agreed" },
-  "label": "我已阅读并同意《用户协议》",
-  "on_change": { "action": "update_data", "path": "/agreed", "value": "${value}" }
-}
-```
-
-`${value}` 在 checkbox 场景下是 `true`（勾选）或 `false`（取消勾选）。
-
-### rules（校验规则）
-
-配合 `required: true` 可以实现"必须勾选才能提交"：
-
-```json
-{
-  "id": "agree-check",
-  "component": "checkbox",
-  "checked": { "path": "/agreed" },
-  "label": "我已阅读并同意《用户协议》",
-  "rules": [{ "required": true, "message": "请先勾选协议" }],
-  "on_change": { "action": "update_data", "path": "/agreed", "value": "${value}" }
-}
-```
-
-注意：`required: true` 对 checkbox 意味着值必须是 `true`（勾选），空值或 `false` 都会触发校验失败。
 
 ## 完整示例
 
-### 协议勾选（表单必备）
+一个动态从状态树读取选项列表的多选框组，且绑定了事件和必填校验：
 
 ```json
 {
-  "id": "agree-check",
+  "id": "skills_selector",
   "component": "checkbox",
-  "checked": { "path": "/agreed" },
-  "label": "我已阅读并同意《用户协议》和《隐私政策》",
-  "rules": [{ "required": true, "message": "请先阅读并同意协议" }],
-  "on_change": { "action": "update_data", "path": "/agreed", "value": "${value}" }
-}
-```
-
-### 加急处理开关
-
-```json
-{
-  "id": "urgent-check",
-  "component": "checkbox",
-  "checked": { "path": "/isUrgent" },
-  "label": "标记为加急处理",
-  "on_change": { "action": "update_data", "path": "/isUrgent", "value": "${value}" }
-}
-```
-
-### 订阅选择
-
-```json
-{
-  "id": "newsletter-check",
-  "component": "checkbox",
-  "checked": { "path": "/newsletter" },
-  "label": "订阅每周精选内容",
-  "on_change": { "action": "update_data", "path": "/newsletter", "value": "${value}" }
-}
-```
-
-### 在表单中使用
-
-```json
-[
-  {
-    "id": "register-form",
-    "component": "form",
-    "submitButtonId": "submit-btn",
-    "children": ["username-input", "agree-check", "submit-btn"]
+  "options": "${data.skillList}",
+  "value": {
+    "path": "/userProfile/skills"
   },
-  {
-    "id": "username-input",
-    "component": "input",
-    "placeholder": "请输入用户名",
-    "value": { "path": "/username" },
-    "rules": [{ "required": true, "message": "请输入用户名" }],
-    "on_change": { "action": "update_data", "path": "/username", "value": "${value}" }
-  },
-  {
-    "id": "agree-check",
-    "component": "checkbox",
-    "checked": { "path": "/agreed" },
-    "label": "我已阅读并同意《用户协议》",
-    "rules": [{ "required": true, "message": "请先同意用户协议" }],
-    "on_change": { "action": "update_data", "path": "/agreed", "value": "${value}" }
-  },
-  {
-    "id": "submit-btn",
-    "component": "button",
-    "label": "注册",
-    "on_tap": [
-      { "action": "http_proxy", "payload": { "http_config": { "method": "POST", "path": "/api/register" } } }
-    ]
+  "rules": [
+    { "required": true, "message": "请至少选择一项技能" }
+  ],
+  "on_change": {
+    "action": "message",
+    "payload": {
+      "type": "success",
+      "content": "当前选中的技能是：${value}"
+    }
   }
-]
+}
 ```
-
-## 与 radio 的选择
-
-| 场景 | 推荐组件 |
-|------|---------|
-| 只能选一个（互斥选项） | `radio` |
-| 可以选多个（复选） | `checkbox`（多个组合） |
-| 布尔开关（是/否） | `checkbox` |
-| 同意/不同意 | `checkbox` |
 
 ## 新手常见问题
 
-**Q: 勾选了但提交时提示"请先勾选协议"？**
-- 这是 `rules` 校验没有通过。
-- 检查 checkbox 是否放在 `form` 内，以及 `form` 的 `submitButtonId` 是否指向提交按钮。
+**Q: 为什么我勾选了一个 checkbox，其他 checkbox 也被勾选了？**
+- 在单选模式下，如果你在页面中放置了多个独立的 `checkbox`，并且它们绑定了同一个 `value.path`，那么它们的状态会同步。如果你希望做多选，请使用单个 `checkbox` 组件并传入 `options` 数组，而不是写多个组件。
 
-**Q: 想实现"记住密码"功能？**
-- 这通常是前端本地存储（localStorage）的功能，与 checkbox 无关。
-- checkbox 只负责表单数据的绑定。
+**Q: 动态获取的 options 为什么不渲染？**
+- 检查你绑定的表达式 `${data.xxx}` 在状态树中是否存在，并且确保它是一个包含 `label` 和 `value` 的标准数组格式。
 
-**Q: checkbox 默认是勾选还是未勾选？**
-- 取决于 `dataModel` 中对应字段的初始值：
-  - `true` → 初始勾选
-  - `false` 或 `undefined` → 初始未勾选
-
-**Q: 想禁用 checkbox（用户不能操作）？**
-- 目前 `checkbox` 组件暂不支持 `disabled` 属性。
-- 如果需要只读展示，可以考虑使用 `table` 组件的 `renderAs: "checkbox"` 列。
-
-**Q: 多个 checkbox 实现多选？**
-- 目前 faui 没有原生的"多选 checkbox 组"组件。
-- 如果需要多选，可以用多个独立的 checkbox，每个绑定到 `dataModel` 的不同字段。
+**Q: checked.path 和 value.path 有什么区别？**
+- 在 FAUI 的底层实现中，这两个属性是等价的，为了兼容不同开发者的习惯。当两者都存在时，优先取 `checked.path`。建议统一使用 `value.path`。

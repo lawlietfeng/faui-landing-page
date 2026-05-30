@@ -1,251 +1,101 @@
 # mentions 组件
 
-`mentions` 是提及组件，用于在文本框中通过触发符（如 `@` 或 `#`）提及人员、话题或标签。常见于评论、聊天、任务分配等需要 @ 通知的场景。
+`mentions` 是提及组件，用于在文本框中通过触发符（如 `@` 或 `#`）提及特定的人员、话题或标签。它会在用户输入触发符时自动弹出建议列表供用户选择。
 
 ## 适用场景
 
-- 评论中 @提及用户（如 GitHub、微博评论）
-- 任务分配中 @负责人
-- 群聊中 #话题 标签
-- 任何需要在文本中插入特定标记的场景
-
-## 核心概念
-
--mentions 的工作方式：
-1. 用户在文本框中输入触发符（如 `@`）
-2. 系统弹出建议列表
-3. 用户选择或继续输入过滤
-4. 选择后，建议内容以特殊样式插入到文本中
+- **用户提及与通知**：评论、聊天、任务分配中 @负责人（如 GitHub、微博评论）。
+- **标签与话题归类**：群聊、动态发布中的 #话题 标签。
+- **自定义指令快速输入**：如输入 `/` 触发快捷指令菜单。
 
 ## 核心属性
 
-### prefix（触发符）
+| 属性名 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `value.path` | `string` | - | 双向绑定的数据路径。配合 `on_change` 实现输入回写。 |
+| `on_change` | `ActionConfig` | - | 文本改变或选中选项时触发的动作。如果不配置但配置了 `value.path`，默认执行回写。自定义时可通过 `${$value}` 引用最新值，组件会保留你设置的自定义 `value` 表达式不覆盖。 |
+| `prefix` | `string` \| `string[]` | `"@"` | 触发建议列表的字符。 |
+| `options` | `Array<{ label, value }>` | `[]` | 建议选项列表。`label` 为展示文本，`value` 为选中后插入的真实值。 |
+| `placeholder` | `string` | - | 输入框为空时的提示文字。 |
+| `rules` | `FormRule[]` | - | 配合 `form` 校验的规则数组。 |
 
-触发建议列表的字符，默认为 `@`。可以是单个字符或数组：
+### prefix（触发符配置）
 
-```json
-// 单个触发符
-{ "prefix": "@" }
-
-// 多个触发符
-{ "prefix": ["@", "#"] }
-```
-
-### options（建议选项列表）
-
-```json
-{
-  "id": "comment-mentions",
-  "component": "mentions",
-  "options": [
-    { "value": "alice", "label": "Alice" },
-    { "value": "bob", "label": "Bob" },
-    { "value": "charlie", "label": "Charlie" }
-  ]
-}
-```
-
-- `value`：选中后插入到文本中的值
-- `label`：在建议列表中显示的文本
-
-### placeholder（占位提示）
-
-```json
-{
-  "id": "comment-mentions",
-  "component": "mentions",
-  "placeholder": "输入 @ 提及相关人员"
-}
-```
-
-### value.path（数据绑定）
-
-```json
-{
-  "id": "comment-mentions",
-  "component": "mentions",
-  "value": { "path": "/comment" }
-}
-```
-
-### on_change（值变化事件）
-
-**必须配置**：
-
-```json
-{
-  "id": "comment-mentions",
-  "component": "mentions",
-  "value": { "path": "/comment" },
-  "on_change": { "action": "update_data", "path": "/comment", "value": "${value}" }
-}
-```
-
-### rules（校验规则）
-
-```json
-{
-  "id": "comment-mentions",
-  "component": "mentions",
-  "rules": [
-    { "required": true, "message": "评论不能为空" },
-    { "min": 5, "message": "评论字数至少 5 个字" }
-  ]
-}
-```
-
-### validateTrigger（触发校验时机）
-
-```json
-{
-  "id": "comment-mentions",
-  "component": "mentions",
-  "validateTrigger": "onChange"
-}
-```
-
-## 完整示例
-
-### 用户提及（@用户）
-
-```json
-{
-  "id": "comment-mentions",
-  "component": "mentions",
-  "placeholder": "输入 @ 提及相关人员",
-  "prefix": "@",
-  "value": { "path": "/comment" },
-  "options": [
-    { "value": "alice", "label": "Alice（产品经理）" },
-    { "value": "bob", "label": "Bob（前端开发）" },
-    { "value": "charlie", "label": "Charlie（设计师）" },
-    { "value": "david", "label": "David（后端开发）" },
-    { "value": "emma", "label": "Emma（测试）" }
-  ],
-  "rules": [
-    { "required": true, "message": "评论不能为空" },
-    { "min": 5, "message": "评论字数至少 5 个字" }
-  ],
-  "on_change": { "action": "update_data", "path": "/comment", "value": "${value}" }
-}
-```
-
-### 话题标签（#话题）
-
-```json
-{
-  "id": "topic-mentions",
-  "component": "mentions",
-  "placeholder": "输入 # 添加话题标签",
-  "prefix": "#",
-  "value": { "path": "/topics" },
-  "options": [
-    { "value": "feature-request", "label": "功能建议" },
-    { "value": "bug-report", "label": "Bug 反馈" },
-    { "value": "discussion", "label": "讨论" },
-    { "value": "announcement", "label": "公告" }
-  ],
-  "on_change": { "action": "update_data", "path": "/topics", "value": "${value}" }
-}
-```
-
-### 多触发符（@用户 和 #话题）
+设置触发弹出列表的特殊字符。可以是单个字符或数组，默认为 `@`。
 
 ```json
 {
   "id": "multi-mentions",
   "component": "mentions",
-  "placeholder": "输入 @ 提及人员或 # 添加话题",
-  "prefix": ["@", "#"],
-  "value": { "path": "/content" },
-  "options": [
-    { "value": "alice", "label": "@Alice" },
-    { "value": "bob", "label": "@Bob" },
-    { "value": "charlie", "label": "@Charlie" },
-    { "value": "feature", "label": "#功能建议" },
-    { "value": "bug", "label": "#Bug反馈" },
-    { "value": "discussion", "label": "#讨论" }
-  ],
-  "on_change": { "action": "update_data", "path": "/content", "value": "${value}" }
+  "prefix": ["@", "#"]
 }
 ```
 
-### 在表单中使用
+### options（建议选项列表）
+
+配置弹出菜单中的可选项。`label` 是用户在列表中看到的文本，`value` 是用户点击后实际插入到文本框中的内容。
 
 ```json
-[
-  {
-    "id": "feedback-form",
-    "component": "form",
-    "submitButtonId": "submit-btn",
-    "children": ["title-input", "comment-mentions", "submit-btn"]
-  },
-  {
-    "id": "title-input",
-    "component": "input",
-    "placeholder": "请输入反馈标题",
-    "value": { "path": "/title" },
-    "rules": [{ "required": true, "message": "请输入标题" }],
-    "on_change": { "action": "update_data", "path": "/title", "value": "${value}" }
-  },
-  {
-    "id": "comment-mentions",
-    "component": "mentions",
-    "placeholder": "请输入反馈内容，可 @ 提及相关人员",
-    "prefix": "@",
-    "value": { "path": "/content" },
-    "options": [
-      { "value": "alice", "label": "Alice（产品经理）" },
-      { "value": "bob", "label": "Bob（前端开发）" },
-      { "value": "charlie", "label": "Charlie（设计师）" }
-    ],
-    "rules": [
-      { "required": true, "message": "请输入反馈内容" },
-      { "min": 10, "message": "内容至少 10 个字符" }
-    ],
-    "on_change": { "action": "update_data", "path": "/content", "value": "${value}" }
-  },
-  {
-    "id": "submit-btn",
-    "component": "button",
-    "label": "提交反馈",
-    "on_tap": [
-      { "action": "http_proxy", "payload": { "http_config": { "method": "POST", "path": "/api/feedback" } } }
-    ]
+{
+  "id": "user-mentions",
+  "component": "mentions",
+  "options": [
+    { "value": "alice", "label": "Alice (产品经理)" },
+    { "value": "bob", "label": "Bob (前端开发)" }
+  ]
+}
+```
+*注：当用户选择第一个选项时，文本框中实际会插入 `@alice`。*
+
+### value.path 与 on_change（数据双向绑定）
+
+与普通的 `input` 组件类似，用于将输入的内容同步到全局状态。
+
+```json
+{
+  "id": "comment-mentions",
+  "component": "mentions",
+  "value": { "path": "/commentText" }
+}
+```
+
+## 完整示例
+
+一个完整的包含表单校验和提及人员的评论输入框配置：
+
+```json
+{
+  "id": "comment-mentions",
+  "component": "mentions",
+  "placeholder": "请输入反馈内容，输入 @ 提及相关人员",
+  "prefix": "@",
+  "value": { "path": "/content" },
+  "options": [
+    { "value": "alice", "label": "Alice（产品经理）" },
+    { "value": "bob", "label": "Bob（前端开发）" },
+    { "value": "charlie", "label": "Charlie（设计师）" }
+  ],
+  "rules": [
+    { "required": true, "message": "请输入反馈内容" },
+    { "min": 10, "message": "内容至少 10 个字符" }
+  ],
+  "style": {
+    "width": "100%",
+    "minHeight": 80
   }
-]
+}
 ```
 
 ## 新手常见问题
 
-**Q: 输入 @ 后没有弹出建议列表？**
-- 检查 `prefix` 是否配置正确。
-- 检查 `options` 是否正确配置，每个选项需要有 `value` 字段。
+**Q: 输入 `@` 后没有弹出建议列表？**
+- 检查 `options` 数组是否为空，或者格式是否正确（必须包含 `value` 和 `label` 字段）。
 
-**Q: 选中的值显示格式不对？**
-- 选中后插入到文本中的值是 `options` 中的 `value` 字段。
-- `label` 字段只在建议列表中显示。
+**Q: 选中的值在文本框中显示格式不对？**
+- 文本框中插入的值是由 `prefix` 和 `options` 中的 `value` 组合而成的（例如 `@alice`）。`label` 字段（例如 `"Alice (产品经理)"`）仅仅只在下拉建议列表中作为展示用途，不会被插入到文本框内。
 
-**Q: 可以同时支持 @ 和 # 两种触发符吗？**
-- 可以，将 `prefix` 设置为数组：`"prefix": ["@", "#"]`。
-- 不同触发符可以对应不同的 `options` 数据源（如果需要，可以通过 `split` 配合实现）。
+**Q: 后端怎么知道我提及了谁？**
+- `mentions` 组件最终产生的值是一个包含了 `@value` 标记的普通字符串（如 `"你好 @alice，请查看此需求"`）。业务后端需要使用正则或分词技术去解析这个字符串，提取出 `@` 后面的 `value` 标识。
 
-**Q: 如何自定义触发符的样式？**
-- 目前 `mentions` 组件的样式主要由 Ant Design 决定。
-- 如需自定义，可能需要通过 `style` 或 `className` 覆盖。
-
-**Q: 选中的 mention 如何在后端解析？**
-- 选中的 mention 会以 `@value` 的形式插入到文本中。
-- 后端可以按照 `@` 符号来解析和提取被提及的人员/话题。
-
-**Q: `on_change` 的 `${value}` 是什么格式？**
-- 是包含 mention 标记的完整文本字符串。
-- 例如：`"Hello @alice, please review this @bob"`。
-
-**Q: 如何校验文本中必须包含 mention？**
-- 可以通过自定义校验函数或在 `on_change` 中更新额外的状态字段来实现。
-- 目前的 `rules` 不支持直接校验 mention 是否存在。
-
-**Q: `split` 属性有什么用？**
-- `split` 用于指定 mention 值与周围文本的分隔符，默认是空格。
-- 如果需要自定义 mention 在文本中的格式，可以调整此属性。
+**Q: 能不能强制要求文本中必须 @ 某个人才能提交？**
+- `rules` 校验规则中目前不直接提供“必须包含提及”的配置项。你可以通过配置 `rules` 的 `pattern` 属性（正则表达式如 `.*@\\w+.*`）来强制文本中必须存在 `@` 及其后的字符。
