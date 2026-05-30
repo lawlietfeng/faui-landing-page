@@ -12,6 +12,16 @@ import { componentCategories } from './componentCategories';
 
 const markdownModules = import.meta.glob('../../../docs/**/*.md', { query: '?raw', import: 'default', eager: true });
 
+// 顶层指南的展示顺序与友好标题。未在此列出的指南会按文件名追加到末尾。
+const GUIDE_ORDER: { slug: string; label: string }[] = [
+  { slug: 'npm-usage', label: 'NPM 使用指南' },
+  { slug: 'form-guide', label: 'Form 表单完整指南' },
+  { slug: 'lifecycle-types', label: '生命周期与类型' },
+];
+
+// 默认落地页:第一篇有效的指南 slug。如果上线时改顺序,这里也跟着改。
+const DEFAULT_GUIDE_SLUG = 'npm-usage';
+
 interface DocRoute {
   path: string;
   content: string;
@@ -23,7 +33,7 @@ interface GuideItem {
 }
 
 const processDocs = () => {
-  const guideItems: GuideItem[] = [];
+  const guideMap = new Map<string, GuideItem>();
   const componentDocs = new Map<string, string>();
   const routes: DocRoute[] = [];
 
@@ -35,13 +45,28 @@ const processDocs = () => {
     routes.push({ path: routePath, content });
 
     if (segments.length === 1) {
-      const fileName = segments[0];
-      const title = fileName.charAt(0).toUpperCase() + fileName.slice(1);
-      guideItems.push({ key: routePath, label: title });
+      const slug = segments[0];
+      const titled = GUIDE_ORDER.find((g) => g.slug === slug);
+      guideMap.set(slug, {
+        key: routePath,
+        label: titled?.label ?? slug.charAt(0).toUpperCase() + slug.slice(1),
+      });
     } else if (segments[0] === 'components') {
       componentDocs.set(segments[1], routePath);
     }
   }
+
+  // 按 GUIDE_ORDER 显式排序,未列出的按字母序追加在后面,避免依赖 import.meta.glob 的迭代顺序。
+  const ordered: GuideItem[] = [];
+  for (const { slug } of GUIDE_ORDER) {
+    const item = guideMap.get(slug);
+    if (item) {
+      ordered.push(item);
+      guideMap.delete(slug);
+    }
+  }
+  const remaining = Array.from(guideMap.values()).sort((a, b) => a.key.localeCompare(b.key));
+  const guideItems = [...ordered, ...remaining];
 
   return { guideItems, componentDocs, routes };
 };
@@ -216,7 +241,10 @@ export default function Docs() {
     [guideItems, componentDocs, searchQuery],
   );
 
-  const defaultPath = guideItems.length > 0 ? guideItems[0].key : '';
+  const defaultPath =
+    guideItems.find((g) => g.key === `/${DEFAULT_GUIDE_SLUG}`)?.key
+    ?? guideItems[0]?.key
+    ?? '';
   const currentPath = location.pathname.replace('/docs', '');
   const selectedKeys = [currentPath === '' || currentPath === '/' ? defaultPath : currentPath];
 
