@@ -6,6 +6,11 @@ export interface ComponentCategory {
 
 export const componentCategories: ComponentCategory[] = [
   {
+    key: 'control-flow',
+    label: '控制流 Control Flow',
+    children: ['condition', 'repeater'],
+  },
+  {
     key: 'layout',
     label: '布局 Layout',
     children: ['box', 'flex', 'grid', 'space', 'divider'],
