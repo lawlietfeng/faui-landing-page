@@ -6,6 +6,7 @@ import 'antd/dist/reset.css';
 const Home = lazy(() => import('./pages/Home'));
 const Docs = lazy(() => import('./pages/Docs'));
 const AgentDemo = lazy(() => import('./pages/AgentDemo'));
+const JsonDebug = lazy(() => import('./pages/JsonDebug'));
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/docs/*" element={<Docs />} />
           <Route path="/agent-demo" element={<AgentDemo />} />
+          <Route path="/json-debug" element={<JsonDebug />} />
         </Route>
       </Routes>
     </Suspense>

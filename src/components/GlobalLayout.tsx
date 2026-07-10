@@ -15,9 +15,11 @@ export default function GlobalLayout() {
 
   const getActiveKey = () => {
     const path = location.pathname;
+    if (path === '/') return 'home';
     if (path.startsWith('/docs')) return 'docs';
     if (path.startsWith('/agent-demo')) return 'agent-demo';
-    return 'home';
+    if (path.startsWith('/json-debug')) return 'json-debug';
+    return null;
   };
 
   const activeKey = getActiveKey();
@@ -26,6 +28,7 @@ export default function GlobalLayout() {
     { key: 'home', label: '首页', path: '/' },
     { key: 'docs', label: '在线文档', path: '/docs' },
     { key: 'agent-demo', label: 'Agent', path: '/agent-demo' },
+    { key: 'json-debug', label: 'JSON 调试', path: '/json-debug' },
   ];
 
   return (
