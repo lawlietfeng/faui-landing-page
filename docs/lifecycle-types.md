@@ -149,7 +149,7 @@ faui `Renderer` 不只是静态渲染。它能消费一个 **Activity 流**—�
 
 **防坑**:
 - **表单输入类**(`input` / `select` 等)的 `value` / `data`:**必须**用 `{ "path": "/xxx" }`
-- **展示类**(`text` / `card.title` / `label` 等)的内容:**必须**用插值 `"${xxx}"`
+- **展示类**(`text.content` / `button.label` / `label` 等)的内容:**必须**用插值 `"${xxx}"`
 
 > 输入框存数据,文本框看数据,所以输入框用 path,文本框用 ${},用混了就报错,不混就不报错。
 

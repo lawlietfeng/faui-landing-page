@@ -3,7 +3,8 @@ import type { HTMLAttributes } from 'react';
 import { Button } from 'antd';
 import { CopyOutlined, CheckOutlined } from '@ant-design/icons';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { ghcolors } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { ghcolors, vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { useTheme } from '../../../components/useTheme';
 
 // ghcolors 在 @types/react-syntax-highlighter 下被推断成
 // `CSSProperties | { [key: string]: CSSProperties }` 联合。运行时它就是 prism 主题字典,
@@ -11,6 +12,8 @@ import { ghcolors } from 'react-syntax-highlighter/dist/esm/styles/prism';
 // 只能 `as any` 跳过。问题在上游 @types,不在我们代码。
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ghcolorsStyle = ghcolors as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const vscDarkPlusStyle = vscDarkPlus as any;
 
 export interface CodeBlockProps extends HTMLAttributes<HTMLElement> {
   inline?: boolean;
@@ -23,10 +26,12 @@ export function CodeBlock(props: CodeBlockProps) {
   // 把 react-markdown 注入的 node 字段从 rest 中剔除,避免泄漏到 DOM
   const { inline, className, children, node, ...rest } = props;
   void node;
+  const { theme } = useTheme();
   const [copied, setCopied] = useState(false);
   const match = /language-(\w+)/.exec(className || '');
   const codeContent = String(children).replace(/\n$/, '');
   const isJson = match && match[1].toLowerCase() === 'json';
+  const isDark = theme === 'dark';
 
   const handleCopy = () => {
     navigator.clipboard.writeText(codeContent).then(() => {
@@ -55,7 +60,7 @@ export function CodeBlock(props: CodeBlockProps) {
           className="!absolute !top-3 !right-3 z-10 bg-white dark:bg-[#2d2d2d] border border-gray-200 dark:border-gray-600 shadow-sm"
         />
         <SyntaxHighlighter
-          style={ghcolorsStyle}
+          style={isDark ? vscDarkPlusStyle : ghcolorsStyle}
           language={match[1]}
           PreTag="div"
           customStyle={{
@@ -64,10 +69,12 @@ export function CodeBlock(props: CodeBlockProps) {
             paddingTop: '36px',
             margin: 0,
             fontSize: '14px',
-            backgroundColor: 'var(--tw-prose-pre-bg, #f6f8fa)',
-            border: '1px solid var(--tw-prose-pre-border, #d0d7de)',
+            lineHeight: 1.65,
+            backgroundColor: isDark ? '#111827' : 'var(--tw-prose-pre-bg, #f6f8fa)',
+            border: isDark
+              ? '1px solid #334155'
+              : '1px solid var(--tw-prose-pre-border, #d0d7de)',
           }}
-          className="dark:!bg-[#1e1e1e] dark:!border-gray-700"
           {...rest}
         >
           {formattedContent}

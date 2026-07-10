@@ -1,7 +1,5 @@
 # chart — 数据可视化组件
 
-> ⚠️ **Full 版独有**:`chart` 不在 Form 版 registry 中。本站演示用的是 Form 版 Renderer,这份文档仅用于了解 API。需要实际渲染请切换入口为 `@lawlietfeng/faui/full`,或在 `customComponents` 中自行注入。
-
 基于 Apache ECharts 的声明式图表组件。支持简化模式(快速生成常见图表)和原生模式(完整 ECharts option)。
 
 ## 前置依赖

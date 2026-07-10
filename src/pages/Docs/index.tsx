@@ -87,17 +87,13 @@ export default function Docs() {
       <main className="flex-1 overflow-y-auto bg-white dark:bg-[#121212]">
         <div className="min-h-[280px]">
           <Routes>
-            {routes.map((route) => {
-              const segments = route.path.split('/').filter(Boolean);
-              const componentSlug = segments[0] === 'components' ? segments[1] : undefined;
-              return (
-                <Route
-                  key={route.path}
-                  path={route.path}
-                  element={<DocViewer content={route.content} componentSlug={componentSlug} />}
-                />
-              );
-            })}
+            {routes.map((route) => (
+              <Route
+                key={route.path}
+                path={route.path}
+                element={<DocViewer content={route.content} />}
+              />
+            ))}
             <Route path="/" element={<Navigate to={`/docs${defaultPath}`} replace />} />
             <Route path="*" element={<DocNotFound fallbackPath={defaultPath} />} />
           </Routes>

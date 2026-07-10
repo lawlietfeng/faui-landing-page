@@ -106,7 +106,7 @@
   "trigger": "click",
   "placement": "bottomRight",
   "arrow": false,
-  "children": ["avatar-component"]
+  "children": ["user-button"]
 }
 ```
 

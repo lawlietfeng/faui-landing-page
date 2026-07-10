@@ -26,8 +26,7 @@ const IGNORE_MISSING = [
   /^faui-llm-prompt\.md$/,
 ];
 
-// 这些 landing 文档是 site-specific 改写过的:加了 Full-only banner、Form vs Full 框架、
-// 弱智吧式注释等。允许它们和上游不同,内容漂移不阻塞 CI。
+// 这些 landing 文档是 site-specific 改写过的。允许它们和上游不同,内容漂移不阻塞 CI。
 const IGNORE_DRIFT = [
   /^npm-usage\.md$/,
   /^form-guide\.md$/,
@@ -46,11 +45,11 @@ function walk(root) {
   if (!existsSync(root)) return out;
   function rec(dir) {
     for (const name of readdirSync(dir)) {
-      const full = join(dir, name);
-      const st = statSync(full);
-      if (st.isDirectory()) rec(full);
+      const filePath = join(dir, name);
+      const st = statSync(filePath);
+      if (st.isDirectory()) rec(filePath);
       else if (name.endsWith('.md')) {
-        out.set(relative(root, full), readFileSync(full, 'utf8'));
+        out.set(relative(root, filePath), readFileSync(filePath, 'utf8'));
       }
     }
   }

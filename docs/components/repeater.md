@@ -9,7 +9,7 @@
   "id": "user-cards",
   "component": "repeater",
   "data": { "path": "/users" },
-  "children": ["user-card-template"],
+  "children": ["user-row-template"],
   "direction": "horizontal",
   "gap": 16
 }
@@ -36,7 +36,7 @@
 | `$parent` | 完整数据数组 |
 | `./field` | 相对路径,解析到当前项的字段 |
 
-## 示例 1:简单文本列表(Form 版可用)
+## 示例 1:简单文本列表
 
 ```json
 [
@@ -88,31 +88,38 @@ dataModel:
 
 > `path: "./"` 表示当前迭代项自身。如果数组项是 `{phone: "..."}` 这种对象,就用 `./phone`。
 
-## 示例 3:卡片列表(需要 Full 版)
+## 示例 3:带按钮的列表
 
-repeater 自身在 Form 版也可用,但下面例子用了 Full 版独有的 `card` 组件:
+可以在每一项里组合多个表单组件:
 
 ```json
 [
   {
-    "id": "card-list",
+    "id": "contact-list",
     "component": "repeater",
-    "data": { "path": "/items" },
-    "direction": "horizontal",
-    "gap": 16,
-    "children": ["item-card"],
-    "style": { "flexWrap": "wrap" }
+    "data": { "path": "/contacts" },
+    "direction": "vertical",
+    "gap": 12,
+    "children": ["contact-row"]
   },
   {
-    "id": "item-card",
-    "component": "card",
-    "title": "${$current.name}",
-    "children": ["card-content"]
+    "id": "contact-row",
+    "component": "box",
+    "layout": "horizontal",
+    "spacing": 8,
+    "children": ["contact-name", "contact-phone"]
   },
   {
-    "id": "card-content",
+    "id": "contact-name",
     "component": "text",
-    "content": "${$current.description}"
+    "content": "${$current.name}"
+  },
+  {
+    "id": "contact-phone",
+    "component": "input",
+    "value": { "path": "./phone" },
+    "placeholder": "请输入手机号",
+    "on_change": { "action": "update_data", "path": "./phone", "value": "${value}" }
   }
 ]
 ```

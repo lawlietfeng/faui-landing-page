@@ -55,7 +55,6 @@ src/
 |------|------|
 | faui | JSON Schema UI 渲染器（本站使用的 Form Edition） |
 | faui-agent | AI Agent 框架，Agent 演示页面的核心依赖 |
-| [full-landing-page](https://github.com/lawlietfeng/full-landing-page) | faui 完整版的组件示例站点 |
 
 ## License
 

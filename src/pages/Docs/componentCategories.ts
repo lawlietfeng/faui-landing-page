@@ -4,20 +4,6 @@ export interface ComponentCategory {
   children: string[];
 }
 
-// Form 版 registry 中不存在的组件。本站(Form 版)能展示文档但无法渲染。
-// 用于在菜单显示 (Full 版) 角标,并在文档顶部插入 banner 提示用户切到 Full 版。
-export const FULL_ONLY_COMPONENTS = new Set<string>([
-  // 展示
-  'card', 'avatar', 'badge', 'list', 'descriptions', 'empty', 'image',
-  'qrcode', 'watermark', 'statistic', 'collapse',
-  // 反馈
-  'timeline', 'steps', 'stepindicator', 'tour',
-  // 导航
-  'menu', 'tabs', 'pagination', 'dropdown', 'anchor', 'affix', 'floatbutton',
-  // 数据展示
-  'table', 'tree', 'carousel', 'chart',
-]);
-
 export const componentCategories: ComponentCategory[] = [
   {
     key: 'control-flow',
@@ -27,7 +13,7 @@ export const componentCategories: ComponentCategory[] = [
   {
     key: 'layout',
     label: '布局 Layout',
-    children: ['box', 'flex', 'grid', 'space', 'divider'],
+    children: ['box', 'flex', 'grid', 'space', 'divider', 'layout'],
   },
   {
     key: 'data-entry',
@@ -51,27 +37,10 @@ export const componentCategories: ComponentCategory[] = [
   {
     key: 'display',
     label: '展示 Display',
-    children: [
-      'card', 'avatar', 'badge', 'list', 'descriptions', 'empty',
-      'image', 'qrcode', 'watermark', 'statistic', 'calendar', 'collapse',
-    ],
-  },
-  {
-    key: 'feedback',
-    label: '反馈 Feedback',
-    children: ['timeline', 'steps', 'stepindicator', 'tour'],
-  },
-  {
-    key: 'navigation',
-    label: '导航 Navigation',
-    children: [
-      'menu', 'tabs', 'pagination', 'dropdown',
-      'anchor', 'affix', 'floatbutton',
-    ],
-  },
-  {
-    key: 'data-view',
-    label: '数据展示 Data View',
-    children: ['table', 'tree', 'carousel', 'chart'],
+    children: ['calendar'],
   },
 ];
+
+export const DOCUMENTED_FORM_COMPONENTS = new Set(
+  componentCategories.flatMap((category) => category.children),
+);

@@ -1,6 +1,5 @@
 import { ComponentRegistry } from '@lawlietfeng/faui';
 import type { Activity } from '@lawlietfeng/faui';
-import { FULL_ONLY_COMPONENTS } from '../../Docs/componentCategories';
 
 export type DebugIssueSeverity = 'error' | 'warning';
 export type DebugIssueCategory = 'json' | 'activity' | 'schema' | 'registry';
@@ -131,9 +130,7 @@ function validateSnapshotContent(
         createIssue('error', 'schema', '组件缺少 component 字段。', `${location}.component`),
       );
     } else if (!FORM_COMPONENT_TYPES.has(componentType)) {
-      const message = FULL_ONLY_COMPONENTS.has(componentType)
-        ? `组件 "${componentId || `索引 ${componentIndex}`}" 使用了 "${componentType}"，当前站点是 Form 版，不能渲染该组件。`
-        : `组件 "${componentId || `索引 ${componentIndex}`}" 使用了未知组件类型 "${componentType}"。`;
+      const message = `组件 "${componentId || `索引 ${componentIndex}`}" 使用了当前表单站点不支持的组件类型 "${componentType}"。`;
       issues.push(
         createIssue('error', 'registry', message, `${location}.component`),
       );

@@ -145,7 +145,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="text-center bg-transparent text-gray-400 dark:text-gray-600 py-10 border-t border-black/5 dark:border-white/5 text-sm shrink-0 relative z-10 font-light">
-        <p className="m-0">© {new Date().getFullYear()} FAUI 团队. 追求像素级的完美与清晰的视觉层级.</p>
+        <p className="m-0">© {new Date().toISOString().slice(0, 4)} FAUI 团队. 追求像素级的完美与清晰的视觉层级.</p>
       </footer>
     </div>
   );

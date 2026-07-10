@@ -1,29 +1,14 @@
-import { Alert } from 'antd';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { FULL_ONLY_COMPONENTS } from '../componentCategories';
 import { CodeBlock } from './CodeBlock';
 
 interface DocViewerProps {
   content: string;
-  // `/components/<slug>` 路由专属,用于在 Full 版组件文档顶部展示提示横幅。
-  componentSlug?: string;
 }
 
-export function DocViewer({ content, componentSlug }: DocViewerProps) {
-  const isFullOnly = !!componentSlug && FULL_ONLY_COMPONENTS.has(componentSlug);
-
+export function DocViewer({ content }: DocViewerProps) {
   return (
     <div className="max-w-[860px] mx-auto py-10 px-6 text-gray-900 dark:text-gray-100 text-base leading-relaxed">
-      {isFullOnly && (
-        <Alert
-          type="warning"
-          showIcon
-          className="mb-6"
-          message="本组件仅 Full 版可用"
-          description="本站使用 Form 版 Renderer,只能展示文档。需要实际渲染请改用 @lawlietfeng/faui/full,或在 customComponents 中自行注入。"
-        />
-      )}
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{

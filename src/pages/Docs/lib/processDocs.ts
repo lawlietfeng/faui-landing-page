@@ -1,6 +1,10 @@
 // 加载所有 ./docs/**/*.md (Vite 构建时静态注入),归一成 routes / guides / components 三块。
+import { DOCUMENTED_FORM_COMPONENTS } from '../componentCategories';
 
-const markdownModules = import.meta.glob('../../../../docs/**/*.md', {
+const markdownModules = import.meta.glob([
+  '../../../../docs/**/*.md',
+  '!../../../../docs/components/{affix,anchor,avatar,badge,card,carousel,chart,collapse,descriptions,dropdown,empty,floatbutton,image,list,menu,pagination,qrcode,statistic,stepindicator,steps,table,tabs,timeline,tour,tree,watermark}.md',
+], {
   query: '?raw',
   import: 'default',
   eager: true,
@@ -40,17 +44,21 @@ export function processDocs(): {
     const cleanPath = filePath.replace('../../../../docs/', '').replace('.md', '');
     const segments = cleanPath.split('/');
     const routePath = `/${cleanPath}`;
-    routes.push({ path: routePath, content });
 
     if (segments.length === 1) {
       const slug = segments[0];
+      routes.push({ path: routePath, content });
       const titled = GUIDE_ORDER.find((g) => g.slug === slug);
       guideMap.set(slug, {
         key: routePath,
         label: titled?.label ?? slug.charAt(0).toUpperCase() + slug.slice(1),
       });
     } else if (segments[0] === 'components') {
-      componentDocs.set(segments[1], routePath);
+      const componentSlug = segments[1];
+      if (DOCUMENTED_FORM_COMPONENTS.has(componentSlug)) {
+        routes.push({ path: routePath, content });
+        componentDocs.set(componentSlug, routePath);
+      }
     }
   }
 

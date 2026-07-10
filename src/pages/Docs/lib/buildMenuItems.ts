@@ -1,5 +1,5 @@
 import type { MenuProps } from 'antd';
-import { componentCategories, FULL_ONLY_COMPONENTS } from '../componentCategories';
+import { componentCategories } from '../componentCategories';
 import type { GuideItem } from './processDocs';
 
 // 把指南列表 + 组件分类 + 搜索词组合成 Ant Design Menu items。
@@ -16,11 +16,10 @@ export function buildMenuItems(
       .filter((name) => componentDocs.has(name))
       .filter((name) => !query || name.includes(query))
       .map((name) => {
-        const isFullOnly = FULL_ONLY_COMPONENTS.has(name);
         const baseLabel = name.charAt(0).toUpperCase() + name.slice(1);
         return {
           key: componentDocs.get(name)!,
-          label: isFullOnly ? `${baseLabel} (Full 版)` : baseLabel,
+          label: baseLabel,
         };
       });
 

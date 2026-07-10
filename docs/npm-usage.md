@@ -6,16 +6,11 @@
 
 ## 1. 安装
 
-faui 有两个 entry,根据需求二选一即可:
+安装 faui 默认入口即可:
 
-| 入口 | 包名 | 含组件数 | 适用场景 |
-|------|------|---------|---------|
-| Form 版 | `@lawlietfeng/faui` | 49 | 表单、数据录入、轻量交互 |
-| Full 版 | `@lawlietfeng/faui/full` | 75 | 含 Table / Chart / Carousel / Tour 等富组件 |
-
-> 两个入口共享底层 chunk,但 Form 版不会把 ECharts / framer-motion 拉进 bundle,适合对体积敏感的项目。
->
-> Form 版比 Full 版少 26 个组件,Full 版比 Form 版多 26 个组件,所以它们正好差 26 个组件。
+| 包名 | 含组件数 | 适用场景 |
+|------|---------|---------|
+| `@lawlietfeng/faui` | 49 | 表单、数据录入、轻量交互 |
 
 一次性装齐 peer 依赖:
 
@@ -27,22 +22,13 @@ pnpm add @lawlietfeng/faui react react-dom antd dayjs
 yarn add @lawlietfeng/faui react react-dom antd dayjs
 ```
 
-如果要用 Full 版的 Chart 组件,**必须额外装 echarts**(faui 的可选 peer,运行时动态 import):
-
-```bash
-npm i echarts
-```
-
-> 不装 echarts 就不能用 chart,装了 echarts 就能用 chart,所以装不装 echarts 取决于你用不用 chart。
-
 ### peer 版本要求
 
 - `react >= 18`(推荐 19)
 - `antd >= 5`(本站使用 6)
 - `dayjs >= 1.11`
-- `echarts >= 5`(可选,仅 Full 版 Chart 需要)
 
-## 2. 最小可运行示例(Form 版)
+## 2. 最小可运行示例
 
 ```tsx
 import React from 'react';
@@ -143,7 +129,7 @@ import { SchemaRenderer, ComponentRegistry } from '@lawlietfeng/faui';
 />
 ```
 
-> Form 入口把 `FormComponentRegistry` 重命名导出为 `ComponentRegistry`;Full 入口同名,导出的是 75 项的 full registry。直接换 import 路径就能切换版本。
+> 默认入口已导出 `ComponentRegistry`,适合直接传给 `SchemaRenderer`。
 
 经验法则:**给 AI 用 → Renderer,给静态页用 → SchemaRenderer**。
 
@@ -212,13 +198,8 @@ const MyText: React.FC<ComponentProps<'text'>> = ({ config }) => { /* ... */ };
 `Renderer` 没有传 `httpRequest`,或 `http_config.path` 不是可访问地址。
 (`http_proxy` 自己不发请求,真正发请求的是 `httpRequest`,所以没传 `httpRequest` 的话,发请求的人没来,请求自然就没发。)
 
-### Full 版 Chart 报 "ECharts is not installed"
-没装可选 peer。运行 `npm i echarts` 即可。
-(报错说 ECharts is not installed,意思就是 ECharts 没被 installed,所以 install 一下 ECharts,ECharts 就 installed 了。)
-
-### 引入 Form 版,但用了 `table` / `chart` / `menu` 等组件无渲染
-这些是 Full 版独有组件,Form 版 registry 不包含它们。要么换入口为 `@lawlietfeng/faui/full`,要么通过 `customComponents` 自行注入实现。
-(Form 版没有 table,Full 版有 table,所以想用 table 就得用 Full 版,继续用 Form 版就用不了 table——除非你不想用 table,那用 Form 版就够了。)
+### 组件无渲染
+检查组件类型是否拼写正确,并确认它已经包含在 `ComponentRegistry` 中。
 
 ## 7. 进一步阅读
 
