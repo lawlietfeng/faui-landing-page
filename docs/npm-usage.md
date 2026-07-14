@@ -103,7 +103,7 @@ export default function App() {
 
 faui 暴露**两个**渲染器,适用于不同形态:
 
-### `Renderer`(生命周期感知,默认推荐)
+### `Renderer`(Activity 流渲染,默认推荐)
 
 接受 `Activity[]` 数组,可处理:
 - `ACTIVITY_SNAPSHOT`:整页快照(初始渲染)
@@ -115,9 +115,9 @@ import { Renderer } from '@lawlietfeng/faui';
 <Renderer schema={activities} httpRequest={httpRequest} />
 ```
 
-### `SchemaRenderer`(纯渲染,静态场景)
+### `SchemaRenderer`(直接渲染 Content)
 
-直接接受一份 `Content`(`{ components, dataModel }`),无生命周期处理。如果你的 schema 是一次性生成的静态结构(如本站点首页),用这个更轻量,但**必须显式传入 `componentRegistry`**。
+直接接受一份 `Content`(`{ components, dataModel }`),不解析 `ACTIVITY_SNAPSHOT` 或 `ACTIVITY_DELTA`。如果你的 schema 是一次性生成的静态结构(如本站点首页),用这个更直接,但**必须显式传入 `componentRegistry`**。
 
 ```tsx
 import { SchemaRenderer, ComponentRegistry } from '@lawlietfeng/faui';
@@ -133,9 +133,9 @@ import { SchemaRenderer, ComponentRegistry } from '@lawlietfeng/faui';
 
 经验法则:**给 AI 用 → Renderer,给静态页用 → SchemaRenderer**。
 
-> Renderer 能处理 delta,SchemaRenderer 不能处理 delta,所以要处理 delta 就用 Renderer,不处理 delta 用哪个都行,但用了 SchemaRenderer 就别想处理 delta。
+`Renderer` 能处理 Delta，`SchemaRenderer` 不能处理 Activity 数组。两者都会执行组件 `on_mount` 和 Action 回调，区别只在于是否处理 Activity。
 
-## 4. Schema 约束(必须满足)
+## 4. `Renderer` 的 Activity 约束(必须满足)
 
 - `schema` 必须是数组
 - 至少包含一个 `type: 'ACTIVITY_SNAPSHOT'`
@@ -204,5 +204,7 @@ const MyText: React.FC<ComponentProps<'text'>> = ({ config }) => { /* ... */ };
 ## 7. 进一步阅读
 
 - Form 校验与提交流程:左侧"使用指南" → Form 表单完整指南
+- 组件与 Action 回调:左侧"使用指南" → 组件与 Action 生命周期
+- Activity 与增量更新:左侧"使用指南" → Activity 类型与 JSON Patch
 - 每个组件的具体属性:左侧分类导航
 - AI 生成 schema:见 `@lawlietfeng/faui-agent` 包文档

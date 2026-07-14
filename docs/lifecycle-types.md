@@ -1,12 +1,12 @@
-# 生命周期与增量更新 (Delta) 指南
+# Activity 类型与 JSON Patch
 
-faui `Renderer` 不只是静态渲染。它能消费一个 **Activity 流**——后端或 AI Agent 每次只下发一个轻量补丁,UI 实时同步,用户刚打的字不会被重置,滚动位置不会丢。这份文档解释 Activity 的两种形态,以及如何用 JSON Patch 安全地做局部更新。
+`Renderer` 接收一个 **Activity 流**。后端或 AI Agent 可以下发完整快照，也可以继续下发轻量补丁；界面会据此更新。这份文档说明两种 Activity 数据类型，以及如何用 JSON Patch 做局部更新。
 
-> 不用 Activity 也能渲染,用了 Activity 也能渲染,用不用 Activity 都能渲染——但只有用了 Activity 才能用 Delta。
+> `ACTIVITY_SNAPSHOT` 和 `ACTIVITY_DELTA` 是 `Renderer` 的输入数据类型，不是组件生命周期钩子。组件的 `on_mount` 与 Action 的 `on_success` / `on_error` 见[组件与 Action 生命周期](/docs/lifecycle)。
 
 ---
 
-## 1. 两种 Activity
+## 1. 两种 Activity 数据类型
 
 `Renderer` 接收 `Activity[]` 数组。引擎按数组顺序处理,目前支持两种:
 
@@ -115,7 +115,7 @@ faui `Renderer` 不只是静态渲染。它能消费一个 **Activity 流**—�
 
 ---
 
-## 3. Delta 防坑指南(必读)
+## 3. JSON Patch 防坑指南(必读)
 
 ### 3.1 字段被删 → `ReferenceError`
 
@@ -155,7 +155,7 @@ faui `Renderer` 不只是静态渲染。它能消费一个 **Activity 流**—�
 
 ---
 
-## 4. 为什么用 Delta?
+## 4. 为什么使用 Delta?
 
 1. **极快**:底层是 `fast-json-patch`,几十个补丁加在一起也在 1ms 量级
 2. **不闪烁、不重置**:全量 SNAPSHOT 重渲会触发 React 卸载/重挂,用户刚打的字、滚动位置、焦点都丢。Delta 只重渲影响到的节点,交互状态完整保留
@@ -166,5 +166,6 @@ faui `Renderer` 不只是静态渲染。它能消费一个 **Activity 流**—�
 ## 5. 进一步阅读
 
 - 静态消费 schema:见 npm 使用指南中的 `SchemaRenderer`
+- 组件与 Action 回调:见[组件与 Action 生命周期](/docs/lifecycle)
 - 各组件具体属性:左侧分类导航
 - AI 流式生成 schema:见 `@lawlietfeng/faui-agent` 包文档

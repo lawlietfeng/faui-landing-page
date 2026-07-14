@@ -13,8 +13,10 @@ const markdownModules = import.meta.glob([
 // 顶层指南的展示顺序与友好标题。未在此列出的指南会按文件名追加到末尾。
 export const GUIDE_ORDER: { slug: string; label: string }[] = [
   { slug: 'npm-usage', label: 'NPM 使用指南' },
+  { slug: 'http-request', label: 'HTTP 请求与后端中转' },
   { slug: 'form-guide', label: 'Form 表单完整指南' },
-  { slug: 'lifecycle-types', label: '生命周期与类型' },
+  { slug: 'lifecycle', label: '组件与 Action 生命周期' },
+  { slug: 'lifecycle-types', label: 'Activity 类型与 JSON Patch' },
 ];
 
 // 默认落地页:第一篇有效的指南 slug。如果上线时改顺序,这里也跟着改。
